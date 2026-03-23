@@ -2,7 +2,7 @@
 using System.Data;
 using System.Windows;
 
-namespace WpfApp1
+namespace Activity_Finder
 {
     /// <summary>
     /// Interaction logic for App.xaml
