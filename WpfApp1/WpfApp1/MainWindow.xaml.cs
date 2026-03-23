@@ -20,5 +20,10 @@ namespace WpfApp1
         {
             InitializeComponent();
         }
+
+        private void btn()
+        {
+            //test
+        }
     }
 }
