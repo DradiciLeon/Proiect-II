@@ -1,9 +1,9 @@
-﻿using Activity_Finder;
-using Activity_Finder.Models; // Asigură-te că acest namespace este corect pentru AppDbContext și clasa User
+﻿using Activity_Finder.Models;
+using Microsoft.EntityFrameworkCore; // ADĂUGAT: pentru excepții EF Core
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Activity_Finder
 {
@@ -14,100 +14,224 @@ namespace Activity_Finder
             InitializeComponent();
         }
 
-        // Funcție care verifică dacă textul are format de email (ex: nume@domeniu.com)
         private bool IsValidEmail(string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                    return false;
+
+                string pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+                Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
+
+                return regex.IsMatch(email);
+            }
+            catch (ArgumentException)
+            {
+                // ADĂUGAT:
+                // Dacă pattern-ul regex ar fi invalid din greșeală.
+                MessageBox.Show("Modelul de validare pentru email este invalid.",
+                                "Eroare validare",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
                 return false;
-
-            // Șablonul standard pentru orice email valid
-            string pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-
-            // DACĂ VREI STRICT DOAR GMAIL ȘI YAHOO, folosește șablonul de mai jos în loc de cel de sus:
-            // string pattern = @"^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|yahoo\.ro)$";
-
-            Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
-            return regex.IsMatch(email);
+            }
+            catch (Exception ex)
+            {
+                // ADĂUGAT:
+                // Orice altă eroare neașteptată la validarea emailului.
+                MessageBox.Show($"A apărut o eroare la verificarea emailului:\n{ex.Message}",
+                                "Eroare",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+                return false;
+            }
         }
-
 
         private void SignUp_Click(object sender, RoutedEventArgs e)
         {
-            string username = UsernameBox.Text.Trim();
-            string email = EmailBox.Text.Trim();
-            string password = PasswordBox.Password;
-            string confirmPassword = ConfirmPasswordBox.Password;
-
-            // 1. Verificăm dacă sunt goale
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(email) ||
-                string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
+            try
             {
-                MessageBox.Show("Te rog completează toate câmpurile!", "Eroare", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+                string username = UsernameBox.Text?.Trim();
+                string email = EmailBox.Text?.Trim();
+                string password = PasswordBox.Password;
+                string confirmPassword = ConfirmPasswordBox.Password;
 
-            // --- NOU: 2. VERIFICĂM DACĂ EMAILUL ESTE VALID ---
-            if (!IsValidEmail(email))
-            {
-                MessageBox.Show("Te rog introdu o adresă de email validă (ex: nume@gmail.com)!", "Email invalid", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            // 3. Verificăm dacă parolele coincid
-            if (password != confirmPassword)
-            {
-                MessageBox.Show("Parolele nu coincid! Încearcă din nou.", "Eroare", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            // 3. Interacțiunea cu Baza de Date
-            using (var context = new AppDbContext())
-            {
-                // Verificăm dacă username-ul sau email-ul există deja
-                bool userExists = context.Users.Any(u => u.Username == username || u.Email == email);
-
-                if (userExists)
+                // 1. Verificăm dacă sunt goale
+                if (string.IsNullOrWhiteSpace(username) ||
+                    string.IsNullOrWhiteSpace(email) ||
+                    string.IsNullOrWhiteSpace(password) ||
+                    string.IsNullOrWhiteSpace(confirmPassword))
                 {
-                    MessageBox.Show("Acest Username sau Email este deja folosit!", "Eroare", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Te rog completează toate câmpurile!",
+                                    "Eroare",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
                     return;
                 }
 
-                // Dacă totul e ok, creăm noul User
-                var newUser = new User
+                // ADĂUGAT:
+                // Verificare lungime minimă username
+                if (username.Length < 3)
                 {
-                    Username = username,
-                    Email = email,
-                    Password = password // Pentru un proiect real, aici ar trebui pus un HASH, nu parola directă
-                };
+                    MessageBox.Show("Username-ul trebuie să aibă cel puțin 3 caractere.",
+                                    "Validare",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
+                    return;
+                }
 
-                // Adăugăm în baza de date și salvăm
-                context.Users.Add(newUser);
-                context.SaveChanges();
+                // ADĂUGAT:
+                // Verificare lungime minimă parolă
+                if (password.Length < 6)
+                {
+                    MessageBox.Show("Parola trebuie să aibă cel puțin 6 caractere.",
+                                    "Validare",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
+                    return;
+                }
 
-                MessageBox.Show("Cont creat cu succes! Te poți loga acum.", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+                // 2. Verificăm dacă emailul este valid
+                if (!IsValidEmail(email))
+                {
+                    MessageBox.Show("Te rog introdu o adresă de email validă (ex: nume@gmail.com)!",
+                                    "Email invalid",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
+                    return;
+                }
 
-                // Ne întoarcem automat la fereastra de Login
-                // Dacă fereastra ta de login se numește MainWindow sau LogIn, modifică mai jos:
-                LogIn loginWindow = new LogIn();
-                loginWindow.Show();
-                this.Close(); // Închidem fereastra de Sign Up
+                // 3. Verificăm dacă parolele coincid
+                if (password != confirmPassword)
+                {
+                    MessageBox.Show("Parolele nu coincid! Încearcă din nou.",
+                                    "Eroare",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
+                    return;
+                }
+
+                using (var context = new AppDbContext())
+                {
+                    // ADĂUGAT:
+                    // Verificăm dacă DB răspunde înainte de operațiile principale.
+                    context.Users.Any();
+
+                    bool userExists = context.Users
+                                             .Any(u => u.Username == username || u.Email == email);
+
+                    if (userExists)
+                    {
+                        MessageBox.Show("Acest Username sau Email este deja folosit!",
+                                        "Eroare",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Error);
+                        return;
+                    }
+
+                    var newUser = new User
+                    {
+                        Username = username,
+                        Email = email,
+                        Password = password
+                    };
+
+                    context.Users.Add(newUser);
+                    context.SaveChanges();
+
+                    MessageBox.Show("Cont creat cu succes! Te poți loga acum.",
+                                    "Succes",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Information);
+
+                    LogIn loginWindow = new LogIn();
+                    loginWindow.Show();
+                    this.Close();
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                // ADĂUGAT:
+                // Foarte important la SignUp.
+                // Apare la inserare/salvare dacă DB are probleme, constraint-uri, duplicate etc.
+                MessageBox.Show($"Eroare la salvarea datelor în baza de date:\n{ex.Message}",
+                                "Eroare bază de date",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // ADĂUGAT:
+                // Poate apărea dacă există o problemă cu contextul EF sau logica interogării.
+                MessageBox.Show($"Operația nu a putut fi finalizată:\n{ex.Message}",
+                                "Eroare operație",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+            }
+            catch (ArgumentNullException ex)
+            {
+                // ADĂUGAT:
+                // Pentru situații în care o valoare ajunge null neașteptat.
+                MessageBox.Show($"O valoare necesară lipsește:\n{ex.Message}",
+                                "Eroare date",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                // ADĂUGAT:
+                // Catch general pentru orice altă eroare neașteptată.
+                MessageBox.Show($"A apărut o eroare neașteptată la crearea contului:\n{ex.Message}",
+                                "Eroare neașteptată",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
             }
         }
 
         private void BackToLogin_Click(object sender, RoutedEventArgs e)
         {
-            // Dacă user-ul se răzgândește și apasă pe "Back to Login"
-            LogIn loginWindow = new LogIn();
-            loginWindow.Show();
-            this.Close();
+            try
+            {
+                LogIn loginWindow = new LogIn();
+                loginWindow.Show();
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                // ADĂUGAT:
+                // Pentru eventuale probleme la deschiderea ferestrei de login.
+                MessageBox.Show($"Nu s-a putut reveni la fereastra de login:\n{ex.Message}",
+                                "Eroare",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+            }
         }
 
-        // Asta e funcția care îți permite să tragi fereastra (drag)
         private void Window_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
+            try
             {
-                DragMove();
+                if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
+                {
+                    DragMove();
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                // ADĂUGAT:
+                // DragMove poate arunca excepție dacă este apelat într-un context nepotrivit.
+                MessageBox.Show($"Fereastra nu poate fi mutată în acest moment:\n{ex.Message}",
+                                "Eroare interfață",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"A apărut o eroare la mutarea ferestrei:\n{ex.Message}",
+                                "Eroare",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
             }
         }
     }
