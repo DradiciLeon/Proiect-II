@@ -1,0 +1,102 @@
+﻿<Window x:Class="Activity_Finder.LogIn"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Activity_Finder"
+        mc:Ignorable="d"
+        Title="Login" Height="480" Width="350"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        Background="Transparent"
+        AllowsTransparency="True">
+
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#FF5F6D" Offset="0"/>
+                <GradientStop Color="#FFC371" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <Border Width="280" Height="420"
+                Background="White"
+                CornerRadius="20"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Padding="20">
+
+            <StackPanel>
+                <TextBlock Text="Welcome"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Margin="0,10"/>
+
+                <TextBlock Text="Username"
+                           FontWeight="SemiBold"
+                           Margin="0,10,0,2"/>
+
+                <TextBox x:Name="UsernameBox"
+                         Height="35"
+                         Padding="10"
+                         Background="#FFF5F5F5"
+                         BorderThickness="0"/>
+
+                <TextBlock Text="Password"
+                           FontWeight="SemiBold"
+                           Margin="0,10,0,2"/>
+
+                <Grid>
+                    <PasswordBox x:Name="PasswordBox"
+                                 Height="35"
+                                 Padding="10"
+                                 Background="#FFF5F5F5"
+                                 BorderThickness="0"/>
+
+                    <TextBox x:Name="PasswordTextBox"
+                             Height="35"
+                             Padding="10"
+                             Background="#FFF5F5F5"
+                             BorderThickness="0"
+                             Visibility="Collapsed"/>
+
+                    <Button Content="👁"
+                            Width="35"
+                            Height="35"
+                            HorizontalAlignment="Right"
+                            Click="TogglePasswordVisibility"
+                            Background="Transparent"
+                            BorderThickness="0"/>
+                </Grid>
+
+                <Button Content="Login"
+                        Height="40"
+                        Margin="0,20,0,10"
+                        Background="#FF5F6D"
+                        Foreground="White"
+                        FontWeight="Bold"
+                        BorderThickness="0"
+                        Click="Login_Click"/>
+
+                <Button Content="Create Account"
+                        Height="40"
+                        Margin="0,0,0,10"
+                        Background="Transparent"
+                        Foreground="#FF5F6D"
+                        FontWeight="Bold"
+                        BorderBrush="#FF5F6D"
+                        BorderThickness="1"
+                        Click="CreateAccount_Click"/>
+
+                <Button Content="Exit"
+                        Height="30"
+                        Background="Transparent"
+                        Foreground="Gray"
+                        BorderThickness="0"
+                        Click="Exit_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
