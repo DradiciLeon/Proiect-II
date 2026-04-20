@@ -47,14 +47,16 @@ namespace Activity_Finder
                     if (user != null)
                     {
                         MessageBox.Show($"Te-ai logat cu succes! Bine ai venit, {user.Username}!",
-                                        "Succes",
-                                        MessageBoxButton.OK,
-                                        MessageBoxImage.Information);
+                        "Succes",
+                         MessageBoxButton.OK,
+                        MessageBoxImage.Information);
 
-                        // Exemplu pentru viitor:
-                        // DashboardWindow dashboard = new DashboardWindow(user);
-                        // dashboard.Show();
-                        // this.Close();
+                        // ACESTA ESTE CODUL DE REDIRECȚIONARE:
+                        // Creăm HomePage și îi pasăm obiectul 'user' găsit în baza de date
+                        HomePage home = new HomePage(user);
+                        home.Show();
+
+                        this.Close(); // Închidem fereastra de Login
                     }
                     else
                     {

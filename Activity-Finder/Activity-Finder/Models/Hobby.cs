@@ -12,7 +12,12 @@ namespace Activity_Finder.Models
         public string Name { get; set; }
         public string Description { get; set; }
 
-        // Relația inversă
+        // Proprietăți noi care să corespundă cu UI-ul tău
+        public string Category { get; set; }
+        public DateTime? Date { get; set; }
+        public int MaxPeople { get; set; }
+
+        // Relația Many-to-Many (Participanții la activitate)
         public List<User> Users { get; set; } = new List<User>();
     }
 }
