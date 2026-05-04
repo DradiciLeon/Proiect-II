@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Activity_Finder.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260420124402_Initial")]
-    partial class Initial
+    [Migration("20260430214512_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -37,6 +37,13 @@ namespace Activity_Finder.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("Date")
                         .HasColumnType("datetime2");
 
@@ -51,7 +58,12 @@ namespace Activity_Finder.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Hobbies");
                 });
@@ -64,6 +76,14 @@ namespace Activity_Finder.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DistanceUnit")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -71,6 +91,20 @@ namespace Activity_Finder.Migrations
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProfileImagePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProfileVisibility")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PushNotifications")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowHobbyBadge")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -81,26 +115,69 @@ namespace Activity_Finder.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Activity_Finder.Models.UserInterest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserInterests");
+                });
+
             modelBuilder.Entity("HobbyUser", b =>
                 {
-                    b.Property<int>("HobbiesId")
+                    b.Property<int>("HobbyId")
                         .HasColumnType("int");
 
                     b.Property<int>("UsersId")
                         .HasColumnType("int");
 
-                    b.HasKey("HobbiesId", "UsersId");
+                    b.HasKey("HobbyId", "UsersId");
 
                     b.HasIndex("UsersId");
 
-                    b.ToTable("HobbyUser");
+                    b.ToTable("HobbyParticipants", (string)null);
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.Hobby", b =>
+                {
+                    b.HasOne("Activity_Finder.Models.User", "User")
+                        .WithMany("Hobbies")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.UserInterest", b =>
+                {
+                    b.HasOne("Activity_Finder.Models.User", "User")
+                        .WithMany("UserInterests")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HobbyUser", b =>
                 {
                     b.HasOne("Activity_Finder.Models.Hobby", null)
                         .WithMany()
-                        .HasForeignKey("HobbiesId")
+                        .HasForeignKey("HobbyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -109,6 +186,13 @@ namespace Activity_Finder.Migrations
                         .HasForeignKey("UsersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.User", b =>
+                {
+                    b.Navigation("Hobbies");
+
+                    b.Navigation("UserInterests");
                 });
 #pragma warning restore 612, 618
         }
