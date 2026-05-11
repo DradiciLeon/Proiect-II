@@ -25,14 +25,14 @@ namespace Activity_Finder
                 // 1. Validări de bază (Păstrate)
                 if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
                 {
-                    MessageBox.Show("Te rog introdu username-ul și parola!", "Date lipsă", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    CustomMessageBox.Show("Te rog introdu username-ul și parola!", "Date lipsă");
                     return;
                 }
 
                 // 2. Protecție Brute Force (Păstrată)
                 if (LoginAttemptLimiter.IsLocked(username, out TimeSpan remaining))
                 {
-                    MessageBox.Show($"Prea multe încercări greșite. Încearcă din nou peste {Math.Ceiling(remaining.TotalMinutes)} minute.", "Cont blocat temporar", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    CustomMessageBox.Show($"Prea multe încercări greșite. Încearcă din nou peste {Math.Ceiling(remaining.TotalMinutes)} minute.", "Cont blocat temporar");
                     return;
                 }
 
@@ -48,7 +48,7 @@ namespace Activity_Finder
                         // Resetăm încercările greșite pentru acest username, chiar dacă e admin
                         LoginAttemptLimiter.Reset(username);
 
-                        MessageBox.Show("Acces autorizat: Bun venit în panoul de administrare!", "Admin Login", MessageBoxButton.OK, MessageBoxImage.Information);
+                        CustomMessageBox.Show("Acces autorizat: Bun venit în panoul de administrare!", "Admin Login");
 
                         // Deschidem fereastra de Admin
                         AdminWindow adminWin = new AdminWindow();
@@ -77,7 +77,7 @@ namespace Activity_Finder
 
                         LoginAttemptLimiter.Reset(username);
 
-                        MessageBox.Show($"Te-ai logat cu succes! Bine ai venit, {user.Username}!", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+                        CustomMessageBox.Show($"Te-ai logat cu succes! Bine ai venit, {user.Username}!", "Succes");
 
                         HomePage home = new HomePage(user);
                         home.Show();
@@ -88,18 +88,18 @@ namespace Activity_Finder
                     // 4. Înregistrare eșec (Păstrată)
                     LoginAttemptLimiter.RegisterFailedAttempt(username);
 
-                    MessageBox.Show("Username sau parolă incorecte!", "Eroare login", MessageBoxButton.OK, MessageBoxImage.Error);
+                    CustomMessageBox.Show("Username sau parolă incorecte!", "Eroare login");
                 }
             }
             catch (DbUpdateException ex)
             {
                 AppLogger.Log(ex);
-                MessageBox.Show("A apărut o eroare la actualizarea datelor.", "Eroare bază de date", MessageBoxButton.OK, MessageBoxImage.Error);
+                CustomMessageBox.Show("A apărut o eroare la actualizarea datelor.", "Eroare bază de date");
             }
             catch (Exception ex)
             {
                 AppLogger.Log(ex);
-                MessageBox.Show("A apărut o eroare la logare.", "Eroare", MessageBoxButton.OK, MessageBoxImage.Error);
+                CustomMessageBox.Show("A apărut o eroare la logare.", "Eroare");
             }
         }
 

@@ -9,11 +9,11 @@ namespace Activity_Finder.Models
         public DbSet<User> Users { get; set; }
         public DbSet<Hobby> Hobbies { get; set; }
         public DbSet<UserInterest> UserInterests { get; set; }
-
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<SupportMessage> SupportMessages { get; set; }
-
+        public DbSet<JoinRequest> JoinRequests { get; set; }
         public DbSet<Admin> Admins { get; set; }
-
+      
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=HobbyAppDB;Trusted_Connection=True;");

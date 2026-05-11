@@ -43,6 +43,36 @@ namespace Activity_Finder.Migrations
                     b.ToTable("Admins");
                 });
 
+            modelBuilder.Entity("Activity_Finder.Models.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("HobbyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HobbyId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ChatMessages");
+                });
+
             modelBuilder.Entity("Activity_Finder.Models.Hobby", b =>
                 {
                     b.Property<int>("Id")
@@ -90,6 +120,36 @@ namespace Activity_Finder.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Hobbies");
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.JoinRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("HobbyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HobbyId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("JoinRequests");
                 });
 
             modelBuilder.Entity("Activity_Finder.Models.SupportMessage", b =>
@@ -207,12 +267,50 @@ namespace Activity_Finder.Migrations
                     b.ToTable("HobbyParticipants", (string)null);
                 });
 
+            modelBuilder.Entity("Activity_Finder.Models.ChatMessage", b =>
+                {
+                    b.HasOne("Activity_Finder.Models.Hobby", "Hobby")
+                        .WithMany()
+                        .HasForeignKey("HobbyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Activity_Finder.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Hobby");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Activity_Finder.Models.Hobby", b =>
                 {
                     b.HasOne("Activity_Finder.Models.User", "User")
                         .WithMany("Hobbies")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.JoinRequest", b =>
+                {
+                    b.HasOne("Activity_Finder.Models.Hobby", "Hobby")
+                        .WithMany()
+                        .HasForeignKey("HobbyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Activity_Finder.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Hobby");
 
                     b.Navigation("User");
                 });
