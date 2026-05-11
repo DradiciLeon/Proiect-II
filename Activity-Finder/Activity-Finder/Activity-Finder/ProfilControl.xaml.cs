@@ -18,12 +18,11 @@ namespace Activity_Finder
     {
         private User _currentUser;
 
-        // Variabile pentru Autocomplete Locație
         private string _googleApiKey = "AIzaSyDJQgSxw7taAsc23FuHBvuf-9Zle8y2jss";
         private DispatcherTimer _typingTimer;
         private bool _isSelectingFromList = false;
         private bool _locationSelectedFromSuggestions = false;
-
+        private bool _isReadOnly = false;
         public ProfilControl(User user)
         {
             InitializeComponent();
@@ -34,9 +33,41 @@ namespace Activity_Finder
             _typingTimer.Tick += TypingTimer_Tick;
 
             LoadUserData();
+            LoadActivities();
+        }
+        public void SetReadOnlyMode()
+        {
+            _isReadOnly = true;
+
+            DisplayNameInput.IsReadOnly = true;
+            BioInput.IsReadOnly = true;
+            LocationInput.IsReadOnly = true;
+
+            SaveProfileButton.Visibility = Visibility.Collapsed;
+            BtnAddHobby.Visibility = Visibility.Collapsed;
+            
         }
 
-        // 1. Încărcare date la deschidere
+        private void LoadActivities()
+        {
+            using (var context = new AppDbContext())
+            {
+                var myActivities = context.Hobbies
+                    .Where(h => h.UserId == _currentUser.Id)
+                    .OrderByDescending(h => h.Date)
+                    .ToList();
+
+                MyActivitiesList.ItemsSource = myActivities;
+
+                var joinedActivities = context.Hobbies
+                    .Where(h => h.Users.Any(u => u.Id == _currentUser.Id))
+                    .OrderByDescending(h => h.Date)
+                    .ToList();
+
+                JoinedActivitiesList.ItemsSource = joinedActivities;
+            }
+        }
+
         private void LoadUserData()
         {
             using (var context = new AppDbContext())
@@ -52,14 +83,16 @@ namespace Activity_Finder
             }
 
             DisplayNameInput.Text = !string.IsNullOrEmpty(_currentUser.DisplayName)
-                                    ? _currentUser.DisplayName
-                                    : _currentUser.Username;
+                ? _currentUser.DisplayName
+                : _currentUser.Username;
 
             BioInput.Text = _currentUser.Bio;
             LocationInput.Text = _currentUser.Location;
 
             if (!string.IsNullOrWhiteSpace(_currentUser.Location))
                 _locationSelectedFromSuggestions = true;
+
+            SuggestionsBorder.Visibility = Visibility.Collapsed;
 
             if (!string.IsNullOrEmpty(_currentUser.ProfileImagePath) && File.Exists(_currentUser.ProfileImagePath))
             {
@@ -69,10 +102,17 @@ namespace Activity_Finder
             RefreshInterests();
         }
 
-        // Se declanșează la fiecare literă tastată în locație
         private void LocationInput_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_isSelectingFromList) return;
+
+            string input = LocationInput.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(input) || input == _currentUser.Location)
+            {
+                SuggestionsBorder.Visibility = Visibility.Collapsed;
+                return;
+            }
 
             _locationSelectedFromSuggestions = false;
 
@@ -80,14 +120,13 @@ namespace Activity_Finder
             _typingTimer.Start();
         }
 
-        // Se execută după ce utilizatorul se oprește 500ms din scris
         private async void TypingTimer_Tick(object sender, EventArgs e)
         {
             _typingTimer.Stop();
 
             string input = LocationInput.Text.Trim();
 
-            if (input.Length < 3)
+            if (input.Length < 3 || input == _currentUser.Location)
             {
                 SuggestionsBorder.Visibility = Visibility.Collapsed;
                 return;
@@ -111,11 +150,20 @@ namespace Activity_Finder
 
                             foreach (var pred in predictions.EnumerateArray())
                             {
-                                suggestions.Add(pred.GetProperty("description").GetString());
+                                var description = pred.GetProperty("description").GetString();
+                                if (!string.IsNullOrWhiteSpace(description))
+                                    suggestions.Add(description);
                             }
 
-                            LocationSuggestionsBox.ItemsSource = suggestions;
-                            SuggestionsBorder.Visibility = Visibility.Visible;
+                            if (suggestions.Count > 0)
+                            {
+                                LocationSuggestionsBox.ItemsSource = suggestions;
+                                SuggestionsBorder.Visibility = Visibility.Visible;
+                            }
+                            else
+                            {
+                                SuggestionsBorder.Visibility = Visibility.Collapsed;
+                            }
                         }
                         else
                         {
@@ -130,21 +178,29 @@ namespace Activity_Finder
             }
         }
 
-        // Se declanșează când utilizatorul selectează o locație din sugestii
         private void LocationSuggestionsBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (LocationSuggestionsBox.SelectedItem is string selectedAddress)
             {
                 _isSelectingFromList = true;
+
                 LocationInput.Text = selectedAddress;
                 SuggestionsBorder.Visibility = Visibility.Collapsed;
-                _isSelectingFromList = false;
 
                 _locationSelectedFromSuggestions = true;
+                _currentUser.Location = selectedAddress;
+
+                LocationSuggestionsBox.SelectedItem = null;
+
+                _isSelectingFromList = false;
             }
         }
 
-        // 2. Salvare modificări profil (Nume, Bio, Locație)
+        private void LocationInput_GotFocus(object sender, RoutedEventArgs e)
+        {
+            SuggestionsBorder.Visibility = Visibility.Collapsed;
+        }
+
         private void SaveProfile_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -172,14 +228,11 @@ namespace Activity_Finder
                     return;
                 }
 
-                // Locația trebuie aleasă din sugestiile Google, nu scrisă manual
                 if (!_locationSelectedFromSuggestions)
                 {
-                    MessageBox.Show(
+                    CustomMessageBox.Show(
                         "Te rog selectează locația din lista de sugestii.",
-                        "Locație invalidă",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning
+                        "Locație invalidă"
                     );
                     return;
                 }
@@ -196,130 +249,304 @@ namespace Activity_Finder
                         context.SaveChanges();
                         _currentUser = userDb;
 
-                        MessageBox.Show("Profile updated successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        SuggestionsBorder.Visibility = Visibility.Collapsed;
+
+                        CustomMessageBox.Show("Profile updated successfully!", "Success");
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error saving profile: " + ex.Message);
+                CustomMessageBox.Show("Error saving profile: " + ex.Message);
             }
         }
 
-        // 3. Upload Poza Profil
-        // 3. Upload Poza Profil
-private void UploadPhoto_Click(object sender, RoutedEventArgs e)
-{
-    OpenFileDialog dlg = new OpenFileDialog { Filter = "Images|*.jpg;*.jpeg;*.png" };
-
-    if (dlg.ShowDialog() == true)
-    {
-        string imagesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProfileImages");
-
-        if (!Directory.Exists(imagesFolder))
-            Directory.CreateDirectory(imagesFolder);
-
-        // MODIFICAT:
-        // Am adăugat DateTime.Now.Ticks în numele fișierului.
-        // Motiv: dacă poza are mereu același nume, WPF poate afișa imaginea veche din cache.
-        string destPath = Path.Combine(
-            imagesFolder,
-            $"profile_{_currentUser.Id}_{DateTime.Now.Ticks}{Path.GetExtension(dlg.FileName)}"
-        );
-
-        File.Copy(dlg.FileName, destPath, true);
-
-        using (var context = new AppDbContext())
+        private void UploadPhoto_Click(object sender, RoutedEventArgs e)
         {
-            var userDb = context.Users.Find(_currentUser.Id);
+            OpenFileDialog dlg = new OpenFileDialog { Filter = "Images|*.jpg;*.jpeg;*.png" };
 
-            if (userDb != null)
+            if (dlg.ShowDialog() == true)
             {
-                userDb.ProfileImagePath = destPath;
-                context.SaveChanges();
+                string imagesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProfileImages");
 
-                // MODIFICAT:
-                // Actualizăm imediat obiectul local, ca UI-ul să știe noua poză fără restart.
-                _currentUser.ProfileImagePath = destPath;
+                if (!Directory.Exists(imagesFolder))
+                    Directory.CreateDirectory(imagesFolder);
 
-                // MODIFICAT:
-                // Reîncărcăm imaginea imediat după upload.
-                SetProfileImage(destPath);
-
-                MessageBox.Show(
-                    "Poza de profil a fost actualizată.\n\nProfile picture updated.",
-                    "Succes / Success",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information
+                string destPath = Path.Combine(
+                    imagesFolder,
+                    $"profile_{_currentUser.Id}_{DateTime.Now.Ticks}{Path.GetExtension(dlg.FileName)}"
                 );
+
+                File.Copy(dlg.FileName, destPath, true);
+
+                using (var context = new AppDbContext())
+                {
+                    var userDb = context.Users.Find(_currentUser.Id);
+
+                    if (userDb != null)
+                    {
+                        userDb.ProfileImagePath = destPath;
+                        context.SaveChanges();
+
+                        _currentUser.ProfileImagePath = destPath;
+                        SetProfileImage(destPath);
+
+                        CustomMessageBox.Show(
+                            "Poza de profil a fost actualizată.\n\nProfile picture updated.",
+                            "Succes / Success"
+                        );
+                    }
+                }
             }
         }
-    }
-}
 
-private void SetProfileImage(string path)
-{
-    try
-    {
-        // MODIFICAT:
-        // BitmapCacheOption.OnLoad încarcă imaginea complet în memorie.
-        // BitmapCreateOptions.IgnoreImageCache forțează WPF să nu folosească imaginea veche.
-        BitmapImage bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-        bitmap.UriSource = new Uri(path, UriKind.Absolute);
-        bitmap.EndInit();
+        private void SetProfileImage(string path)
+        {
+            try
+            {
+                BitmapImage bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                bitmap.UriSource = new Uri(path, UriKind.Absolute);
+                bitmap.EndInit();
+                bitmap.Freeze();
 
-        // MODIFICAT:
-        // Freeze ajută imaginea să fie folosită stabil în UI și eliberează fișierul.
-        bitmap.Freeze();
+                ProfilePictureBrush.ImageSource = bitmap;
+                CameraIcon.Visibility = Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                CustomMessageBox.Show("Eroare la încărcarea pozei: " + ex.Message);
+            }
+        }
 
-        ProfilePictureBrush.ImageSource = bitmap;
-        CameraIcon.Visibility = Visibility.Collapsed;
-    }
-    catch (Exception ex)
-    {
-        MessageBox.Show("Eroare la încărcarea pozei: " + ex.Message);
-    }
-}
-
-        // 4. Logica Hobby-uri
         private void RefreshInterests()
         {
             using (var context = new AppDbContext())
             {
-                InterestsList.ItemsSource = context.UserInterests.Where(i => i.UserId == _currentUser.Id).ToList();
+                InterestsList.ItemsSource = context.UserInterests
+                    .Where(i => i.UserId == _currentUser.Id)
+                    .ToList();
             }
         }
 
-        private void BtnAddHobby_Click(object sender, RoutedEventArgs e) => HobbyPopup.IsOpen = true;
+        private void BtnAddHobby_Click(object sender, RoutedEventArgs e)
+        {
+            HobbyPopup.IsOpen = true;
+        }
 
         private void HobbySelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (HobbySelector.SelectedItem is ListBoxItem selected)
             {
                 string hobbyName = selected.Content.ToString();
+
                 using (var context = new AppDbContext())
                 {
                     if (!context.UserInterests.Any(i => i.UserId == _currentUser.Id && i.Name == hobbyName))
                     {
-                        context.UserInterests.Add(new UserInterest { UserId = _currentUser.Id, Name = hobbyName });
+                        context.UserInterests.Add(new UserInterest
+                        {
+                            UserId = _currentUser.Id,
+                            Name = hobbyName
+                        });
+
                         context.SaveChanges();
                         RefreshInterests();
                     }
                 }
+
                 HobbyPopup.IsOpen = false;
             }
         }
+        private void ActivityCard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is Hobby hobby)
+            {
+                using (var context = new AppDbContext())
+                {
+                    var hobbyDb = context.Hobbies
+                        .Where(h => h.Id == hobby.Id)
+                        .Select(h => new
+                        {
+                            h.Name,
+                            h.Category,
+                            h.City,
+                            h.Date,
+                            h.MaxPeople,
+                            OrganizerName = h.User.Username,
+                            Participants = h.Users.Select(u => u.Username).ToList()
+                        })
+                        .FirstOrDefault();
 
+                    if (hobbyDb == null)
+                    {
+                        CustomMessageBox.Show("Activitatea nu a fost găsită.");
+                        return;
+                    }
+
+                    string participantsText = hobbyDb.Participants.Count == 0
+                        ? "Niciun participant."
+                        : "• " + string.Join("\n• ", hobbyDb.Participants);
+
+                    Window detailsWindow = new Window
+                    {
+                        Title = "Detalii activitate",
+                        Width = 440,
+                        Height = 560,
+                        ResizeMode = ResizeMode.NoResize,
+                        WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                        WindowStyle = WindowStyle.None,
+                        AllowsTransparency = true,
+                        Background = System.Windows.Media.Brushes.Transparent
+                    };
+
+                    Border outerBorder = new Border
+                    {
+                        CornerRadius = new CornerRadius(28),
+                        Padding = new Thickness(10)
+                    };
+
+                    outerBorder.Background = new System.Windows.Media.LinearGradientBrush
+                    {
+                        StartPoint = new Point(0, 0),
+                        EndPoint = new Point(1, 1),
+                        GradientStops =
+                {
+                    new System.Windows.Media.GradientStop(
+                        (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF6B6B"), 0),
+                    new System.Windows.Media.GradientStop(
+                        (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF9E5E"), 0.55),
+                    new System.Windows.Media.GradientStop(
+                        (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFD93D"), 1)
+                }
+                    };
+
+                    Border card = new Border
+                    {
+                        Background = System.Windows.Media.Brushes.White,
+                        CornerRadius = new CornerRadius(26),
+                        Padding = new Thickness(26)
+                    };
+
+                    Grid grid = new Grid();
+
+                    Button closeButton = new Button
+                    {
+                        Content = "✕",
+                        Width = 38,
+                        Height = 38,
+                        FontSize = 16,
+                        FontWeight = FontWeights.Bold,
+                        Background = new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF6B6B")),
+                        Foreground = System.Windows.Media.Brushes.White,
+                        BorderThickness = new Thickness(0),
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        VerticalAlignment = VerticalAlignment.Top,
+                        Cursor = System.Windows.Input.Cursors.Hand
+                    };
+
+                    closeButton.Click += (s, ev) => detailsWindow.Close();
+
+                    StackPanel panel = new StackPanel
+                    {
+                        Margin = new Thickness(0, 10, 0, 0)
+                    };
+
+                    TextBlock title = new TextBlock
+                    {
+                        Text = hobbyDb.Name,
+                        FontSize = 28,
+                        FontWeight = FontWeights.Black,
+                        Foreground = new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF6B6B")),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Margin = new Thickness(0, 0, 0, 5)
+                    };
+
+                    TextBlock subtitle = new TextBlock
+                    {
+                        Text = "Activity details",
+                        FontSize = 13,
+                        Foreground = new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#636E72")),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Margin = new Thickness(0, 0, 0, 22)
+                    };
+
+                    Border detailsBox = new Border
+                    {
+                        Background = new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFF7F4")),
+                        CornerRadius = new CornerRadius(22),
+                        Padding = new Thickness(18),
+                        Margin = new Thickness(0, 0, 0, 18)
+                    };
+
+                    TextBlock details = new TextBlock
+                    {
+                        Text =
+                            $"🎯 Categorie: {hobbyDb.Category}\n\n" +
+                            $"👤 Organizator: {hobbyDb.OrganizerName}\n\n" +
+                            $"📍 Locație: {hobbyDb.City}\n\n" +
+                            $"📅 Data: {hobbyDb.Date:dd MMM yyyy HH:mm}\n\n" +
+                            $"👥 Participanți ({hobbyDb.Participants.Count}/{hobbyDb.MaxPeople}):",
+                        FontSize = 15,
+                        Foreground = new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2D3436")),
+                        TextWrapping = TextWrapping.Wrap
+                    };
+
+                    detailsBox.Child = details;
+
+                    Border participantsBox = new Border
+                    {
+                        Background = new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F5F6FA")),
+                        CornerRadius = new CornerRadius(18),
+                        Padding = new Thickness(16)
+                    };
+
+                    TextBlock participants = new TextBlock
+                    {
+                        Text = participantsText,
+                        FontSize = 15,
+                        Foreground = new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2D3436")),
+                        TextWrapping = TextWrapping.Wrap
+                    };
+
+                    participantsBox.Child = participants;
+
+                    panel.Children.Add(title);
+                    panel.Children.Add(subtitle);
+                    panel.Children.Add(detailsBox);
+                    panel.Children.Add(participantsBox);
+
+                    grid.Children.Add(panel);
+                    grid.Children.Add(closeButton);
+
+                    card.Child = grid;
+                    outerBorder.Child = card;
+                    detailsWindow.Content = outerBorder;
+
+                    detailsWindow.ShowDialog();
+                }
+            }
+        }
         private void DeleteInterest_Click(object sender, RoutedEventArgs e)
         {
+            if (_isReadOnly)
+                return;
+
             if ((sender as Button).CommandParameter is UserInterest interest)
             {
                 using (var context = new AppDbContext())
                 {
                     var toDelete = context.UserInterests.Find(interest.Id);
+
                     if (toDelete != null)
                     {
                         context.UserInterests.Remove(toDelete);
