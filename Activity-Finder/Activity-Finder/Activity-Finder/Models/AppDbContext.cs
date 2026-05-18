@@ -13,7 +13,9 @@ namespace Activity_Finder.Models
         public DbSet<SupportMessage> SupportMessages { get; set; }
         public DbSet<JoinRequest> JoinRequests { get; set; }
         public DbSet<Admin> Admins { get; set; }
-      
+        public DbSet<ChatReadStatus> ChatReadStatuses { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
+        public DbSet<ChatMessageSeen> ChatMessageSeens { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=HobbyAppDB;Trusted_Connection=True;");
@@ -33,6 +35,17 @@ namespace Activity_Finder.Models
                 .HasMany(h => h.Users)
                 .WithMany()
                 .UsingEntity(j => j.ToTable("HobbyParticipants"));
+            modelBuilder.Entity<ChatMessageSeen>()
+    .HasOne(x => x.ChatMessage)
+    .WithMany()
+    .HasForeignKey(x => x.ChatMessageId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatMessageSeen>()
+                .HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             base.OnModelCreating(modelBuilder);
         }

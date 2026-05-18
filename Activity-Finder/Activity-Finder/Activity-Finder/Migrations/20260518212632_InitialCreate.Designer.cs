@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Activity_Finder.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260511134802_InitialCreate")]
+    [Migration("20260518212632_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -74,6 +74,54 @@ namespace Activity_Finder.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ChatMessages");
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.ChatMessageSeen", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChatMessageId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChatMessageId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ChatMessageSeens");
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.ChatReadStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("HobbyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ChatReadStatuses");
                 });
 
             modelBuilder.Entity("Activity_Finder.Models.Hobby", b =>
@@ -155,6 +203,38 @@ namespace Activity_Finder.Migrations
                     b.ToTable("JoinRequests");
                 });
 
+            modelBuilder.Entity("Activity_Finder.Models.Rating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FromUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HobbyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Stars")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ToUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromUserId");
+
+                    b.HasIndex("HobbyId");
+
+                    b.ToTable("Ratings");
+                });
+
             modelBuilder.Entity("Activity_Finder.Models.SupportMessage", b =>
                 {
                     b.Property<int>("Id")
@@ -162,6 +242,13 @@ namespace Activity_Finder.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminReply")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsSolved")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Message")
                         .IsRequired()
@@ -174,6 +261,8 @@ namespace Activity_Finder.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("SupportMessages");
                 });
@@ -289,6 +378,25 @@ namespace Activity_Finder.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Activity_Finder.Models.ChatMessageSeen", b =>
+                {
+                    b.HasOne("Activity_Finder.Models.ChatMessage", "ChatMessage")
+                        .WithMany()
+                        .HasForeignKey("ChatMessageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Activity_Finder.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ChatMessage");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Activity_Finder.Models.Hobby", b =>
                 {
                     b.HasOne("Activity_Finder.Models.User", "User")
@@ -314,6 +422,36 @@ namespace Activity_Finder.Migrations
                         .IsRequired();
 
                     b.Navigation("Hobby");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.Rating", b =>
+                {
+                    b.HasOne("Activity_Finder.Models.User", "FromUser")
+                        .WithMany()
+                        .HasForeignKey("FromUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Activity_Finder.Models.Hobby", "Hobby")
+                        .WithMany()
+                        .HasForeignKey("HobbyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FromUser");
+
+                    b.Navigation("Hobby");
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.SupportMessage", b =>
+                {
+                    b.HasOne("Activity_Finder.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

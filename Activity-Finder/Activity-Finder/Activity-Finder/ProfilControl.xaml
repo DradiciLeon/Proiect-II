@@ -13,8 +13,14 @@
 
         <Border Grid.Column="0" Background="#CCFFFFFF" CornerRadius="30" Margin="20" Padding="20" VerticalAlignment="Top">
             <StackPanel>
-                <Grid Margin="0,10,0,15" HorizontalAlignment="Center">
-                    <Button Click="UploadPhoto_Click" Background="Transparent" BorderThickness="0" Cursor="Hand" Width="120" Height="120">
+                <Grid Margin="0,10,0,10" HorizontalAlignment="Center">
+                    <Button x:Name="UploadPhotoButton"
+        Click="UploadPhoto_Click"
+        Background="Transparent"
+        BorderThickness="0"
+        Cursor="Hand"
+        Width="120"
+        Height="120">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="White" CornerRadius="60" x:Name="border"/>
@@ -32,6 +38,34 @@
                     </Grid>
                 </Grid>
 
+                <Border Background="#FFD93D" 
+                CornerRadius="12" 
+                Padding="10,4" 
+                HorizontalAlignment="Center" 
+                Margin="0,0,0,20">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="10" Opacity="0.1" ShadowDepth="2" Color="#FFD93D"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="LblRatingValue" 
+                           Text="5.0" 
+                           FontWeight="Black" 
+                           Foreground="#2D3436" 
+                           FontSize="14"
+                           VerticalAlignment="Center"/>
+                        <TextBlock Text=" ⭐" 
+                           FontSize="12" 
+                           VerticalAlignment="Center" 
+                           Margin="2,0,0,0"/>
+                        <TextBlock x:Name="LblRatingCount" 
+                           Text=" (0)" 
+                           FontSize="11" 
+                           Foreground="#636E72" 
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
+
                 <TextBlock Text="DISPLAY NAME" FontSize="10" FontWeight="Bold" Foreground="#636E72" Margin="5,0,0,5"/>
                 <Border Background="White" CornerRadius="10" Margin="0,0,0,12">
                     <TextBox x:Name="DisplayNameInput" Background="Transparent" BorderThickness="0" Padding="8" FontSize="14" FontWeight="Bold"/>
@@ -43,30 +77,29 @@
                 </Border>
 
                 <TextBlock Text="LOCATION" FontWeight="Bold" Foreground="#636E72" Margin="5,0,0,5" FontSize="10"/>
-
                 <Grid Margin="0,0,0,20">
                     <StackPanel>
                         <Border Background="White" CornerRadius="10">
                             <TextBox x:Name="LocationInput"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     Padding="8"
-                                     FontSize="12"
-                                     TextChanged="LocationInput_TextChanged"/>
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="8"
+                             FontSize="12"
+                             TextChanged="LocationInput_TextChanged"/>
                         </Border>
 
                         <Border x:Name="SuggestionsBorder"
-                                Background="White"
-                                CornerRadius="10"
-                                BorderBrush="#FF9E5E"
-                                BorderThickness="1"
-                                Margin="0,5,0,0"
-                                Visibility="Collapsed"
-                                MaxHeight="120">
+                        Background="White"
+                        CornerRadius="10"
+                        BorderBrush="#FF9E5E"
+                        BorderThickness="1"
+                        Margin="0,5,0,0"
+                        Visibility="Collapsed"
+                        MaxHeight="120">
                             <ListBox x:Name="LocationSuggestionsBox"
-                                     BorderThickness="0"
-                                     SelectionChanged="LocationSuggestionsBox_SelectionChanged"
-                                     ScrollViewer.VerticalScrollBarVisibility="Hidden"/>
+                             BorderThickness="0"
+                             SelectionChanged="LocationSuggestionsBox_SelectionChanged"
+                             ScrollViewer.VerticalScrollBarVisibility="Hidden"/>
                         </Border>
                     </StackPanel>
                 </Grid>
@@ -161,17 +194,38 @@
                     </WrapPanel>
 
                     <Popup x:Name="HobbyPopup" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnAddHobby}" Placement="Bottom">
-                        <Border Background="White" CornerRadius="10" BorderBrush="#FF9E5E" BorderThickness="1" Padding="5" Width="150">
-                            <ListBox x:Name="HobbySelector" BorderThickness="0" SelectionChanged="HobbySelector_SelectionChanged" Height="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <Border Background="White" CornerRadius="10" BorderBrush="#FF9E5E" BorderThickness="1" Padding="5" Width="240">
+                            <ListBox x:Name="HobbySelector" BorderThickness="0" SelectionChanged="HobbySelector_SelectionChanged" Height="260" Width="220" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                 <ListBoxItem Content="⚽ Sport"/>
+                                <ListBoxItem Content="🏋️ Fitness"/>
+                                <ListBoxItem Content="🧘 Yoga"/>
+                                <ListBoxItem Content="🏃 Running"/>
+                                <ListBoxItem Content="🥾 Hiking"/>
+                                <ListBoxItem Content="🌲 Outdoors"/>
+                                <ListBoxItem Content="🏕️ Camping"/>
+                                <ListBoxItem Content="🚴 Cycling"/>
                                 <ListBoxItem Content="🎮 Gaming"/>
-                                <ListBoxItem Content="🍕 Cooking"/>
-                                <ListBoxItem Content="🏔️ Hiking"/>
+                                <ListBoxItem Content="🎲 Board Games"/>
+                                <ListBoxItem Content="🎬 Movies"/>
+                                <ListBoxItem Content="📺 TV Shows"/>
+                                <ListBoxItem Content="🎉 Parties"/>
+                                <ListBoxItem Content="☕ Coffee"/>
+                                <ListBoxItem Content="🎤 Karaoke"/>
+                                <ListBoxItem Content="🍳 Cooking"/>
+                                <ListBoxItem Content="🍰 Baking"/>
+                                <ListBoxItem Content="🍔 Food"/>
                                 <ListBoxItem Content="🎵 Music"/>
                                 <ListBoxItem Content="🎨 Art"/>
+                                <ListBoxItem Content="📸 Photography"/>
                                 <ListBoxItem Content="📚 Reading"/>
+                                <ListBoxItem Content="✍️ Writing"/>
                                 <ListBoxItem Content="✈️ Travel"/>
                                 <ListBoxItem Content="💻 Tech"/>
+                                <ListBoxItem Content="👨‍💻 Programming"/>
+                                <ListBoxItem Content="🌍 Languages"/>
+                                <ListBoxItem Content="🐶 Pets"/>
+                                <ListBoxItem Content="❤️ Volunteering"/>
+                                <ListBoxItem Content="✨ Other"/>
                             </ListBox>
                         </Border>
                     </Popup>

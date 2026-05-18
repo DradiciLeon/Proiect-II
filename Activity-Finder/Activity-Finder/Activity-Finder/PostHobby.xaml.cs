@@ -158,21 +158,23 @@ namespace Activity_Finder
                 string hobbyName = HobbyNameInput.Text.Trim();
                 string fullAddress = CityInput.Text.Trim();
 
+                string description = string.IsNullOrWhiteSpace(HobbyDescriptionInput.Text) ? "Nicio descriere furnizată." : HobbyDescriptionInput.Text.Trim();
+
                 if (string.IsNullOrWhiteSpace(hobbyName) || string.IsNullOrWhiteSpace(fullAddress))
                 {
-                    MessageBox.Show("Te rog completează numele hobby-ului și locația!");
+                    CustomMessageBox.Show("Te rog completează numele hobby-ului și locația!");
                     return;
                 }
 
                 if (!ContentFilter.IsSafeText(hobbyName, 60, out string hobbyNameError))
                 {
-                    MessageBox.Show(hobbyNameError, "Conținut invalid");
+                    CustomMessageBox.Show(hobbyNameError, "Conținut invalid");
                     return;
                 }
 
                 if (!ContentFilter.IsSafeText(fullAddress, 150, out string cityError))
                 {
-                    MessageBox.Show(cityError, "Conținut invalid");
+                    CustomMessageBox.Show(cityError, "Conținut invalid");
                     return;
                 }
 
@@ -180,7 +182,7 @@ namespace Activity_Finder
                     HourComboBox.SelectedItem == null ||
                     MinuteComboBox.SelectedItem == null)
                 {
-                    MessageBox.Show("Te rog selectează categoria și ora!");
+                    CustomMessageBox.Show("Te rog selectează categoria și ora!");
                     return;
                 }
 
@@ -192,17 +194,15 @@ namespace Activity_Finder
 
                 if (finalDateTime < DateTime.Now)
                 {
-                    MessageBox.Show("Nu poți posta în trecut!");
+                    CustomMessageBox.Show("Nu poți posta în trecut!");
                     return;
                 }
 
                 if (_selectedLat == 0 && _selectedLng == 0)
                 {
-                    MessageBox.Show(
+                    CustomMessageBox.Show(
                         "Te rog selectează o locație validă din lista de sugestii!",
-                        "Locație nedetectată",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning
+                        "Locație nedetectată"
                     );
                     return;
                 }
@@ -215,11 +215,9 @@ namespace Activity_Finder
 
                     if (userHasActivityAtSameTime)
                     {
-                        MessageBox.Show(
+                        CustomMessageBox.Show(
                             "Ai deja o activitate postată la această oră.\n\nAlege altă oră.",
-                            "Conflict de timp",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning
+                            "Conflict de timp"
                         );
                         return;
                     }
@@ -230,11 +228,9 @@ namespace Activity_Finder
 
                     if (samePlaceSameTime)
                     {
-                        MessageBox.Show(
+                        CustomMessageBox.Show(
                             "Există deja o activitate în această locație la această oră.\n\nAlege altă locație sau altă oră.",
-                            "Conflict de locație",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning
+                            "Conflict de locație"
                         );
                         return;
                     }
@@ -249,22 +245,38 @@ namespace Activity_Finder
                         City = fullAddress,
                         Latitude = _selectedLat,
                         Longitude = _selectedLng,
-                        Description = "No description provided.",
+                        Description = description,
                         UserId = _currentUserId
                     };
 
                     context.Hobbies.Add(newHobby);
                     context.SaveChanges();
 
-                    MessageBox.Show("Postat cu succes!");
+                    CustomMessageBox.Show("Postat cu succes!");
                     ReturnToDashboard();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Eroare: {ex.Message}");
+                CustomMessageBox.Show($"Eroare: {ex.Message}");
             }
         }
+
+        private void CategorySelector_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            if (!e.Handled)
+            {
+                e.Handled = true;
+                var eventArg = new System.Windows.Input.MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+                {
+                    RoutedEvent = System.Windows.UIElement.MouseWheelEvent,
+                    Source = sender
+                };
+                var parent = ((System.Windows.FrameworkElement)sender).Parent as System.Windows.UIElement;
+                parent?.RaiseEvent(eventArg);
+            }
+        }
+
 
         private void Back_Click(object sender, RoutedEventArgs e) => ReturnToDashboard();
 

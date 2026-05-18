@@ -43,9 +43,11 @@ namespace Activity_Finder
             BioInput.IsReadOnly = true;
             LocationInput.IsReadOnly = true;
 
+            UploadPhotoButton.IsEnabled = false;
+            UploadPhotoButton.Cursor = null;
+
             SaveProfileButton.Visibility = Visibility.Collapsed;
             BtnAddHobby.Visibility = Visibility.Collapsed;
-            
         }
 
         private void LoadActivities()
@@ -80,21 +82,28 @@ namespace Activity_Finder
                     _currentUser.Location = freshUser.Location;
                     _currentUser.ProfileImagePath = freshUser.ProfileImagePath;
                 }
+
+                // Calculăm Rating-ul Mediu
+                var ratings = context.Ratings.Where(r => r.ToUserId == _currentUser.Id).ToList();
+                if (ratings.Any())
+                {
+                    double average = ratings.Average(r => r.Stars);
+                    LblRatingValue.Text = average.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                    LblRatingCount.Text = $" ({ratings.Count} feedback-uri)";
+                }
+                else
+                {
+                    LblRatingValue.Text = "N/A";
+                    LblRatingCount.Text = " (fără feedback)";
+                }
             }
 
-            DisplayNameInput.Text = !string.IsNullOrEmpty(_currentUser.DisplayName)
-                ? _currentUser.DisplayName
-                : _currentUser.Username;
-
+            // Update UI Fields
+            DisplayNameInput.Text = !string.IsNullOrEmpty(_currentUser.DisplayName) ? _currentUser.DisplayName : _currentUser.Username;
             BioInput.Text = _currentUser.Bio;
             LocationInput.Text = _currentUser.Location;
 
-            if (!string.IsNullOrWhiteSpace(_currentUser.Location))
-                _locationSelectedFromSuggestions = true;
-
-            SuggestionsBorder.Visibility = Visibility.Collapsed;
-
-            if (!string.IsNullOrEmpty(_currentUser.ProfileImagePath) && File.Exists(_currentUser.ProfileImagePath))
+            if (!string.IsNullOrEmpty(_currentUser.ProfileImagePath) && System.IO.File.Exists(_currentUser.ProfileImagePath))
             {
                 SetProfileImage(_currentUser.ProfileImagePath);
             }
@@ -263,7 +272,19 @@ namespace Activity_Finder
 
         private void UploadPhoto_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog dlg = new OpenFileDialog { Filter = "Images|*.jpg;*.jpeg;*.png" };
+            if (_isReadOnly)
+            {
+                CustomMessageBox.Show(
+                    "Nu poți modifica poza altui utilizator.",
+                    "Acces interzis"
+                );
+                return;
+            }
+
+            OpenFileDialog dlg = new OpenFileDialog
+            {
+                Filter = "Images|*.jpg;*.jpeg;*.png"
+            };
 
             if (dlg.ShowDialog() == true)
             {

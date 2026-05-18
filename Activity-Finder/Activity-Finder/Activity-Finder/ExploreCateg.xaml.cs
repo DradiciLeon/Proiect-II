@@ -49,7 +49,19 @@ namespace Activity_Finder
             }
         }
 
-        private void Back_Click(object sender, RoutedEventArgs e)
+        // Adaugă această metodă în clasa ExploreCateg
+        private void BackToHome_Click(object sender, RoutedEventArgs e)
+        {
+            // Căutăm fereastra părinte (HomePage) și apelăm metoda de afișare a dashboard-ului
+            var parentWindow = Window.GetWindow(this) as HomePage;
+            if (parentWindow != null)
+            {
+                parentWindow.ShowHome_Click(null, null);
+            }
+        }
+
+        // Redenumește vechea metodă Back_Click pentru claritate
+        private void BackToCategories_Click(object sender, RoutedEventArgs e)
         {
             ActivitiesView.Visibility = Visibility.Collapsed;
             CategoriesView.Visibility = Visibility.Visible;

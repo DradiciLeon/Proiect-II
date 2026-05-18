@@ -36,19 +36,14 @@ namespace Activity_Finder
                     string.IsNullOrWhiteSpace(password) ||
                     string.IsNullOrWhiteSpace(confirmPassword))
                 {
-                    MessageBox.Show("Te rog completează toate câmpurile!",
-                                    "Eroare",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Warning);
+                    CustomMessageBox.Show("Te rog completează toate câmpurile!", "Lipsa informatii");
                     return;
                 }
 
                 if (username.Length < 3 || username.Length > 30)
                 {
-                    MessageBox.Show("Username-ul trebuie să aibă între 3 și 30 de caractere.",
-                                    "Validare",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Warning);
+                    CustomMessageBox.Show("Username-ul trebuie să aibă între 3 și 30 de caractere.", "Eroare");
+                                    
                     return;
                 }
 
@@ -126,11 +121,8 @@ namespace Activity_Finder
                     context.Users.Add(newUser);
                     context.SaveChanges();
 
-                    MessageBox.Show("Cont creat cu succes! Te poți loga acum.",
-                                    "Succes",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Information);
-
+                    CustomMessageBox.Show("Cont creat cu succes! Te poți loga acum.", "Succes");
+                                    
                     LogIn loginWindow = new LogIn();
                     loginWindow.Show();
                     this.Close();

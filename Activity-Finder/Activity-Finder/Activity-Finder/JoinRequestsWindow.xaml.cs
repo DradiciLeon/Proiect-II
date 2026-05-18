@@ -16,11 +16,11 @@ namespace Activity_Finder
         public JoinRequestsWindow(User currentUser)
         {
             InitializeComponent();
-
             _currentUser = currentUser;
 
             LoadRequests();
 
+            // Timer pentru a verifica cereri noi la fiecare 3 secunde
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromSeconds(3);
             _timer.Tick += (s, e) => LoadRequests();
@@ -40,21 +40,14 @@ namespace Activity_Finder
                 .Select(r => new JoinRequestViewModel
                 {
                     Id = r.Id,
-
                     Username = r.User.Username,
-
                     FullName = string.IsNullOrWhiteSpace(r.User.DisplayName)
                         ? r.User.Username
                         : r.User.DisplayName,
-
                     HobbyName = "Vrea să participe la: " + r.Hobby.Name,
-
-                    RequestedAt = "Trimis la " +
-                                  r.RequestedAt.ToString("dd MMM yyyy HH:mm"),
-
-                    ProfileImage = string.IsNullOrEmpty(r.User.ProfileImagePath)
-                        ? "Images/default-user.png"
-                        : r.User.ProfileImagePath
+                    RequestedAt = "Trimis la " + r.RequestedAt.ToString("dd MMM yyyy HH:mm"),
+                    // Trimitem calea brută, converter-ul se ocupă de restul
+                    ProfileImage = r.User.ProfileImagePath
                 })
                 .ToList();
 
@@ -63,9 +56,7 @@ namespace Activity_Finder
 
         private void Accept_Click(object sender, RoutedEventArgs e)
         {
-            var item =
-                (JoinRequestViewModel)((FrameworkElement)sender).DataContext;
-
+            var item = (JoinRequestViewModel)((FrameworkElement)sender).DataContext;
             using var context = new AppDbContext();
 
             var request = context.JoinRequests
@@ -74,8 +65,7 @@ namespace Activity_Finder
                 .ThenInclude(h => h.Users)
                 .FirstOrDefault(r => r.Id == item.Id);
 
-            if (request == null)
-                return;
+            if (request == null) return;
 
             request.Status = "Accepted";
 
@@ -84,6 +74,7 @@ namespace Activity_Finder
                 request.Hobby.Users.Add(request.User);
             }
 
+            // Notificare automată în chat
             context.ChatMessages.Add(new ChatMessage
             {
                 HobbyId = request.HobbyId,
@@ -93,60 +84,39 @@ namespace Activity_Finder
             });
 
             context.SaveChanges();
-
-            CustomMessageBox.Show(
-                "Cererea a fost acceptată.",
-                "Succes");
-
+            MessageBox.Show("Cererea a fost acceptată.", "Succes");
             LoadRequests();
         }
 
         private void Reject_Click(object sender, RoutedEventArgs e)
         {
-            var item =
-                (JoinRequestViewModel)((FrameworkElement)sender).DataContext;
-
+            var item = (JoinRequestViewModel)((FrameworkElement)sender).DataContext;
             using var context = new AppDbContext();
 
-            var request = context.JoinRequests
-                .FirstOrDefault(r => r.Id == item.Id);
-
-            if (request == null)
-                return;
+            var request = context.JoinRequests.FirstOrDefault(r => r.Id == item.Id);
+            if (request == null) return;
 
             request.Status = "Rejected";
-
             context.SaveChanges();
 
-            CustomMessageBox.Show(
-                "Cererea a fost respinsă.",
-                "Respins");
-
+            MessageBox.Show("Cererea a fost respinsă.", "Respins");
             LoadRequests();
         }
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
-            Window parentWindow = Window.GetWindow(this);
-
-            if (parentWindow is HomePage home)
-            {
-                home.ShowHome_Click(null, null);
-            }
+            _timer.Stop(); // Oprim timer-ul când părăsim pagina
+            var home = Window.GetWindow(this) as HomePage;
+            home?.ShowHome_Click(null, null);
         }
 
         public class JoinRequestViewModel
         {
             public int Id { get; set; }
-
             public string Username { get; set; }
-
             public string FullName { get; set; }
-
             public string HobbyName { get; set; }
-
             public string RequestedAt { get; set; }
-
             public string ProfileImage { get; set; }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,5 +28,11 @@ namespace Activity_Finder.Models
 
         // Participanții (Many-to-Many)
         public virtual List<User> Users { get; set; } = new List<User>();
+
+        [NotMapped] // <-- Această linie e "magia". Spune SQL-ului: "NU crea coloană pentru asta!"
+        public string UserAverageRating { get; set; }
+
+        [NotMapped]
+        public int RemainingSpots { get; set; }
     }
 }

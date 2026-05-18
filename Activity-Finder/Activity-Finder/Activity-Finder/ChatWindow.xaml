@@ -87,40 +87,90 @@
                                 <Setter Property="Padding" Value="0"/>
                                 <Setter Property="Margin" Value="0,8"/>
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Focusable" Value="False"/>
+
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <ContentPresenter/>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
                             </Style>
                         </ListBox.ItemContainerStyle>
 
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid HorizontalAlignment="Stretch">
-                                    <Border Background="{Binding BubbleColor}"
-                                            CornerRadius="{Binding BubbleCornerRadius}"
-                                            Padding="13,10"
-                                            MaxWidth="230"
-                                            HorizontalAlignment="{Binding Alignment}">
-                                        <Border.Effect>
-                                            <DropShadowEffect BlurRadius="10" Opacity="0.08" ShadowDepth="2"/>
-                                        </Border.Effect>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="44"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
 
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Sender}"
-                                                       FontSize="11"
-                                                       FontWeight="Bold"
-                                                       Foreground="{Binding SenderColor}"/>
+                                    <Ellipse Grid.Column="0"
+                                             Width="34"
+                                             Height="34"
+                                             VerticalAlignment="Top"
+                                             Margin="0,0,8,0"
+                                             Visibility="{Binding ShowAvatar}"
+                                             MouseLeftButtonDown="Avatar_Click"
+Tag="{Binding UserId}"
+Cursor="Hand">
+                                        <Ellipse.Fill>
+                                            <ImageBrush ImageSource="{Binding ProfileImagePath}"
+                                                        Stretch="UniformToFill"/>
+                                        </Ellipse.Fill>
+                                    </Ellipse>
 
-                                            <TextBlock Text="{Binding Text}"
-                                                       TextWrapping="Wrap"
-                                                       FontSize="15"
-                                                       Foreground="#2D3436"
-                                                       Margin="0,5,0,0"/>
+                                    <Grid Grid.Column="1">
 
-                                            <TextBlock Text="{Binding Time}"
-                                                       FontSize="11"
-                                                       Foreground="#999"
-                                                       HorizontalAlignment="Right"
-                                                       Margin="0,6,0,0"/>
+                                        <StackPanel HorizontalAlignment="{Binding Alignment}">
+
+                                            <Border Background="{Binding BubbleColor}"
+                CornerRadius="{Binding BubbleCornerRadius}"
+                Padding="13,10"
+                MaxWidth="230"
+                MouseLeftButtonDown="MessageBubble_Click">
+
+                                                <Border.Effect>
+                                                    <DropShadowEffect BlurRadius="10"
+                                  Opacity="0.08"
+                                  ShadowDepth="2"/>
+                                                </Border.Effect>
+
+                                                <StackPanel>
+
+                                                    <TextBlock Text="{Binding Sender}"
+                           FontSize="11"
+                           FontWeight="Bold"
+                           Foreground="{Binding SenderColor}"/>
+
+                                                    <TextBlock Text="{Binding Text}"
+                           TextWrapping="Wrap"
+                           FontSize="15"
+                           Foreground="#2D3436"
+                           Margin="0,5,0,0"/>
+
+                                                    <TextBlock Text="{Binding Time}"
+                           FontSize="11"
+                           Foreground="#999"
+                           HorizontalAlignment="Right"
+                           Margin="0,6,0,0"/>
+
+                                                </StackPanel>
+
+                                            </Border>
+
+                                            <TextBlock Text="{Binding SeenByText}"
+                   FontSize="11"
+                   FontWeight="SemiBold"
+                   Foreground="#999"
+                   Margin="12,3,0,0"
+                   Visibility="{Binding SeenVisibility}"/>
+
                                         </StackPanel>
-                                    </Border>
+
+                                    </Grid>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
@@ -128,14 +178,38 @@
                 </Border>
 
                 <Grid Grid.Row="2" Margin="0,16,0,0">
+
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="54"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="54"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border Background="#F1F2F6"
+                    <Button Width="44"
+                            Height="44"
+                            Background="#FFD93D"
+                            Foreground="White"
+                            BorderThickness="0"
+                            FontSize="22"
+                            FontWeight="Bold"
+                            Content="😀"
+                            Cursor="Hand"
+                            Click="EmojiButton_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="26">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+
+                    <Border Grid.Column="1"
+                            Background="#F1F2F6"
                             CornerRadius="27"
-                            Height="52">
+                            Height="52"
+                            Margin="8,0">
+
                         <TextBox x:Name="MessageTextBox"
                                  Background="Transparent"
                                  BorderThickness="0"
@@ -146,10 +220,9 @@
                                  KeyDown="MessageTextBox_KeyDown"/>
                     </Border>
 
-                    <Button Grid.Column="1"
+                    <Button Grid.Column="2"
                             Width="44"
                             Height="44"
-                            Margin="8,0,0,0"
                             Background="#FF6B6B"
                             Foreground="White"
                             BorderThickness="0"
@@ -166,6 +239,45 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
+
+                    <Popup x:Name="EmojiPopup"
+                           Placement="Top"
+                           StaysOpen="False">
+
+                        <Border Background="White"
+                                CornerRadius="18"
+                                Padding="12">
+
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="15"
+                                                  Opacity="0.15"
+                                                  ShadowDepth="2"/>
+                            </Border.Effect>
+
+                            <WrapPanel Width="260">
+                                <Button Content="😀" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="😂" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="😍" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="😎" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="😭" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="🔥" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="❤️" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="👍" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="🙏" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="🎉" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="🥳" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="😅" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="🤝" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="💪" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="🤩" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="😴" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="😡" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="😇" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="🎮" Click="Emoji_Click" Margin="4"/>
+                                <Button Content="⚽" Click="Emoji_Click" Margin="4"/>
+                            </WrapPanel>
+                        </Border>
+                    </Popup>
                 </Grid>
             </Grid>
         </Border>

@@ -1,86 +1,155 @@
 ﻿<UserControl x:Class="Activity_Finder.ExploreCateg"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="800" Width="1000">
 
     <Grid>
-        <Grid.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#FF6B6B" Offset="0.0" />
-                <GradientStop Color="#FF9E5E" Offset="0.5" />
-                <GradientStop Color="#FFD93D" Offset="1.0" />
-            </LinearGradientBrush>
-        </Grid.Background>
+        <Grid x:Name="CategoriesView" Visibility="Visible" Margin="40">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <StackPanel x:Name="CategoriesView" Visibility="Visible" Margin="40">
-            <TextBlock Text="EXPLORE CATEGORIES"
+            <Button Grid.Row="0"
+                    HorizontalAlignment="Left"
+                    Cursor="Hand"
+                    Click="BackToHome_Click"
+                    Margin="0,0,0,25">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="#CCFFFFFF" CornerRadius="15" Padding="15,8">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⬅" FontWeight="Bold" Margin="0,0,8,0"/>
+                                <TextBlock Text="BACK TO DASHBOARD" FontWeight="Black"/>
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <TextBlock Grid.Row="1"
+                       Text="EXPLORE CATEGORIES"
                        FontSize="38"
                        FontWeight="Black"
                        Foreground="White"
-                       Margin="10,0,0,45"/>
+                       Margin="0,0,0,25"/>
 
-            <WrapPanel>
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Sport" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="SPORT" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
+            <ScrollViewer Grid.Row="2"
+                          Height="570"
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled"
+                          CanContentScroll="False"
+                          PanningMode="VerticalOnly">
 
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Hiking" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="HIKING" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="TV Shows" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="TV SHOWS" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Outdoors" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="OUTDOORS" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Parties" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="PARTIES" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Gaming" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="GAMING" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Cooking" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="COOKING" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Music" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="MUSIC" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Travel" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="TRAVEL" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Reading" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="READING" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Tech" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="TECH" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Fitness" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="FITNESS" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-                <Border Background="White" CornerRadius="28" Padding="35,22" Margin="12" Cursor="Hand" Tag="Other" MouseLeftButtonDown="Category_Click">
-                    <TextBlock Text="OTHER" FontWeight="Black" FontSize="18" Foreground="#2D3436"/>
-                </Border>
-
-            </WrapPanel>
-        </StackPanel>
+                <WrapPanel>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Sport" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="⚽ SPORT" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Fitness" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🏋️ FITNESS" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Yoga" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🧘 YOGA" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Running" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🏃 RUNNING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Hiking" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🥾 HIKING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Outdoors" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🌲 OUTDOORS" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Camping" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🏕️ CAMPING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Cycling" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🚴 CYCLING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Gaming" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🎮 GAMING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Board Games" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🎲 BOARD GAMES" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Movies" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🎬 MOVIES" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="TV Shows" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="📺 TV SHOWS" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Parties" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🎉 PARTIES" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Coffee" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="☕ COFFEE" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Karaoke" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🎤 KARAOKE" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Cooking" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🍳 COOKING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Baking" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🍰 BAKING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Food" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🍔 FOOD" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Music" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🎵 MUSIC" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Art" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🎨 ART" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Photography" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="📸 PHOTOGRAPHY" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Reading" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="📚 READING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Writing" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="✍️ WRITING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Travel" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="✈️ TRAVEL" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Tech" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="💻 TECH" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Programming" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="👨‍💻 PROGRAMMING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Languages" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🌍 LANGUAGES" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Pets" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="🐶 PETS" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Volunteering" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="❤️ VOLUNTEERING" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                    <Border Background="White" CornerRadius="28" Padding="28,18" Margin="0,12,18,12" Cursor="Hand" Tag="Other" MouseLeftButtonDown="Category_Click">
+                        <TextBlock Text="✨ OTHER" FontWeight="Black" FontSize="17" Foreground="#2D3436"/>
+                    </Border>
+                </WrapPanel>
+            </ScrollViewer>
+        </Grid>
 
         <StackPanel x:Name="ActivitiesView" Visibility="Collapsed" Margin="40">
-            <Button Content="← Back"
-                    Width="90"
-                    Height="35"
-                    HorizontalAlignment="Left"
-                    Click="Back_Click"
-                    Margin="0,0,0,20"/>
+            <Button HorizontalAlignment="Left" Cursor="Hand" Click="BackToCategories_Click" Margin="0,0,0,25">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="#CCFFFFFF" CornerRadius="15" Padding="15,8">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⬅" FontWeight="Bold" Margin="0,0,8,0"/>
+                                <TextBlock Text="BACK TO CATEGORIES" FontWeight="Black"/>
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
 
             <TextBlock x:Name="SelectedCategoryTitle"
                        FontSize="32"
@@ -116,10 +185,7 @@
                                             CornerRadius="14"
                                             Padding="14,8"
                                             VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding MaxPeople}"
-                                                   Foreground="White"
-                                                   FontWeight="Black"
-                                                   FontSize="18"/>
+                                        <TextBlock Text="{Binding MaxPeople}" Foreground="White" FontWeight="Black" FontSize="18"/>
                                     </Border>
                                 </Grid>
                             </Border>
@@ -129,7 +195,7 @@
             </ScrollViewer>
 
             <TextBlock x:Name="NoActivitiesText"
-                       Text="No activities found in this category."
+                       Text="No activities found."
                        Foreground="White"
                        FontSize="18"
                        FontWeight="Bold"
