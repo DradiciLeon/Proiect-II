@@ -1,10 +1,10 @@
 ﻿using Activity_Finder.Models;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Controls;
 
 namespace Activity_Finder
 {
@@ -18,6 +18,7 @@ namespace Activity_Finder
             _currentUser = currentUser;
             LoadConversations();
         }
+
         private void LoadConversations()
         {
             using var context = new AppDbContext();
@@ -26,13 +27,8 @@ namespace Activity_Finder
                 .Include(h => h.User)
                 .Include(h => h.Users)
                 .Where(h =>
-
-                    // participi la activitate
                     h.Users.Any(u => u.Id == _currentUser.Id)
-
                     ||
-
-                    // SAU e activitatea ta si exista mesaje de la altii
                     (
                         h.UserId == _currentUser.Id &&
                         context.ChatMessages.Any(m =>
@@ -53,8 +49,15 @@ namespace Activity_Finder
                         .Where(m => m.HobbyId == h.Id)
                         .OrderByDescending(m => m.SentAt)
                         .Select(m => m.Message)
-                        .FirstOrDefault() ?? "Nu există mesaje încă."
+                        .FirstOrDefault() ?? "Nu există mesaje încă.",
+
+                    LastMessageDate = context.ChatMessages
+                        .Where(m => m.HobbyId == h.Id)
+                        .OrderByDescending(m => m.SentAt)
+                        .Select(m => (DateTime?)m.SentAt)
+                        .FirstOrDefault() ?? DateTime.MinValue
                 })
+                .OrderByDescending(c => c.LastMessageDate)
                 .ToList();
 
             ConversationsList.ItemsSource = conversations;
@@ -76,13 +79,12 @@ namespace Activity_Finder
 
                 if (parentWindow is HomePage home)
                 {
-                    home.MainContentArea.Content =
-                        new ChatWindow( hobby,_currentUser);
-
+                    home.MainContentArea.Content = new ChatWindow(hobby, _currentUser);
                     home.HeaderTitle.Text = "💬 CHAT";
                 }
             }
         }
+
         private void Back_Click(object sender, RoutedEventArgs e)
         {
             Window parentWindow = Window.GetWindow(this);
@@ -100,5 +102,6 @@ namespace Activity_Finder
         public string HobbyName { get; set; }
         public string OtherPerson { get; set; }
         public string LastMessage { get; set; }
+        public DateTime LastMessageDate { get; set; }
     }
 }

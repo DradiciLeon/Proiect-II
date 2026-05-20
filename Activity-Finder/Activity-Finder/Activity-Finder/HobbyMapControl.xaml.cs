@@ -1,4 +1,5 @@
 ﻿using Activity_Finder.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Web.WebView2.Core;
 using System;
 using System.Linq;
@@ -11,16 +12,18 @@ namespace Activity_Finder
     public partial class HobbyMapControl : UserControl
     {
         private User _currentUser;
-        private string _googleApiKey = "AIzaSyDJQgSxw7taAsc23FuHBvuf-9Zle8y2jss";
+        private string _googleApiKey = "AIzaSyDJQgSxw7taAsc23FuHBvuf-9Zle8y2jss"; // Recomandat sa nu o tii hardcodata in prod
         private double _currentPinLat = 45.9432;
         private double _currentPinLng = 24.9668;
+
+        // VARIabilă nouă pentru a ține minte pe ce activitate am dat click pe hartă
+        private int _selectedHobbyId = 0;
 
         public HobbyMapControl(User user)
         {
             InitializeComponent();
             _currentUser = user;
 
-            // Verificăm dacă LblRangeText există înainte de a-l folosi (previne crash XAML)
             if (LblRangeText != null)
             {
                 string unit = _currentUser?.DistanceUnit ?? "KM";
@@ -47,6 +50,7 @@ namespace Activity_Finder
 
         private void LoadGoogleMap()
         {
+            // ... (Codul tău de încărcare HTML/JS rămâne identic, nu l-am modificat) ...
             string html = $@"
             <!DOCTYPE html>
             <html>
@@ -93,6 +97,7 @@ namespace Activity_Finder
             </html>";
             MapWebView.NavigateToString(html);
         }
+
         private async void LoadHobbiesOnMap()
         {
             try
@@ -105,7 +110,6 @@ namespace Activity_Finder
 
                     foreach (var h in hobbies)
                     {
-                        // Folosim InvariantCulture pentru a trimite coordonatele cu PUNCT către JS
                         string script = $"addHobbyPin({h.Id}, {h.Latitude.ToString(CultureInfo.InvariantCulture)}, {h.Longitude.ToString(CultureInfo.InvariantCulture)}, '{h.Name.Replace("'", "\\'")}', '{h.Category}');";
                         await MapWebView.ExecuteScriptAsync(script);
                     }
@@ -113,6 +117,7 @@ namespace Activity_Finder
             }
             catch { }
         }
+
         private void CoreWebView2_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             try
@@ -121,13 +126,16 @@ namespace Activity_Finder
                 if (msg.StartsWith("PIN_MOVED:"))
                 {
                     var coords = msg.Split(':')[1].Split(',');
-                    // FIX CRASH: Citim coordonatele cu InvariantCulture (punct, nu virgulă)
                     _currentPinLat = double.Parse(coords[0], CultureInfo.InvariantCulture);
                     _currentPinLng = double.Parse(coords[1], CultureInfo.InvariantCulture);
                 }
                 else if (msg.StartsWith("HOBBY_CLICK:"))
                 {
                     int id = int.Parse(msg.Split(':')[1]);
+
+                    // Salvăm ID-ul ca să știm la ce dăm Join
+                    _selectedHobbyId = id;
+
                     using (var db = new AppDbContext())
                     {
                         var h = db.Hobbies.FirstOrDefault(x => x.Id == id);
@@ -153,7 +161,6 @@ namespace Activity_Finder
             double rKm = RangeSlider.Value;
             if (_currentUser?.DistanceUnit == "MILES") rKm *= 1.60934;
 
-            // Apelăm metoda de filtrare din HomePage
             (Window.GetWindow(this) as HomePage)?.ShowFilteredHome(_currentPinLat, _currentPinLng, rKm);
         }
 
@@ -171,6 +178,98 @@ namespace Activity_Finder
         }
 
         private void CloseDetails_Click(object sender, RoutedEventArgs e) => DetailsPopup.IsOpen = false;
-        private void JoinHobby_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Join logic coming soon!");
+
+        // --- AICI ESTE LOGICA DE JOIN ADAPTATĂ DUPĂ CEA DIN HOMEPAGE ---
+        private void JoinHobby_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedHobbyId == 0) return;
+
+            try
+            {
+                using (var context = new AppDbContext())
+                {
+                    var hobby = context.Hobbies
+                        .Include(h => h.Users)
+                        .FirstOrDefault(h => h.Id == _selectedHobbyId);
+
+                    var user = context.Users.FirstOrDefault(u => u.Id == _currentUser.Id);
+
+                    if (hobby == null || user == null)
+                    {
+                        CustomMessageBox.Show("Eroare la încărcarea datelor.");
+                        return;
+                    }
+
+                    if (hobby.UserId == _currentUser.Id)
+                    {
+                        CustomMessageBox.Show("Nu poți trimite cerere la propria activitate.", "Cerere blocată");
+                        return;
+                    }
+
+                    if (hobby.Date <= DateTime.Now)
+                    {
+                        CustomMessageBox.Show("Activitatea s-a încheiat.", "Activitate încheiată");
+                        return;
+                    }
+
+                    if (hobby.Users.Any(u => u.Id == _currentUser.Id))
+                    {
+                        CustomMessageBox.Show("Ești deja acceptat la această activitate.", "Deja acceptat");
+                        return;
+                    }
+
+                    if (hobby.Users.Count >= hobby.MaxPeople)
+                    {
+                        CustomMessageBox.Show("Activitatea este plină.", "Activitate plină");
+                        return;
+                    }
+
+                    bool alreadyPending = context.JoinRequests.Any(r =>
+                        r.HobbyId == hobby.Id &&
+                        r.UserId == _currentUser.Id &&
+                        r.Status == "Pending");
+
+                    if (alreadyPending)
+                    {
+                        CustomMessageBox.Show("Ai trimis deja o cerere pentru această activitate.", "Cerere existentă");
+                        return;
+                    }
+
+                    var rejectedRequest = context.JoinRequests.FirstOrDefault(r =>
+                        r.HobbyId == hobby.Id &&
+                        r.UserId == _currentUser.Id &&
+                        r.Status == "Rejected");
+
+                    if (rejectedRequest != null)
+                    {
+                        rejectedRequest.Status = "Pending";
+                        rejectedRequest.RequestedAt = DateTime.Now;
+                    }
+                    else
+                    {
+                        context.JoinRequests.Add(new JoinRequest
+                        {
+                            HobbyId = hobby.Id,
+                            UserId = _currentUser.Id,
+                            Status = "Pending",
+                            RequestedAt = DateTime.Now
+                        });
+                    }
+
+                    context.SaveChanges();
+
+                    CustomMessageBox.Show(
+                        "Cererea ta a fost trimisă organizatorului.",
+                        "Cerere trimisă"
+                    );
+
+                    DetailsPopup.IsOpen = false; // Închidem pop-up-ul după succes
+                }
+            }
+            catch (Exception ex)
+            {
+                CustomMessageBox.Show("Eroare la trimiterea cererii: " + ex.Message);
+            }
+        }
     }
 }

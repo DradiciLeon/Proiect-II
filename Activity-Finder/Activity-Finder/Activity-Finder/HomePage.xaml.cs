@@ -17,26 +17,74 @@ namespace Activity_Finder
         private int _lastRequestsCount = 0;
         private DispatcherTimer _notificationTimer;
         private DispatcherTimer _chatTimer;
-        private DateTime _lastChatCheck = DateTime.MinValue;
+        private DispatcherTimer _ratingCheckTimer;
+        
 
         private SolidColorBrush _activeColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6B6B"));
 
         public HomePage(User user)
         {
+
             InitializeComponent();
+           
 
             _currentUser = user;
+           
 
             LoadHobbyFeed();
 
             StartJoinRequestNotifications();
             LoadRequestsBadge();
-
+            CheckForPendingRatings();
             LoadChatBadge();
             StartChatNotifications();
 
             ShowChatButton(true);
+
+            _ratingCheckTimer = new DispatcherTimer();
+            _ratingCheckTimer.Interval = TimeSpan.FromMinutes(1); // Verificăm în fiecare minut
+            _ratingCheckTimer.Tick += (s, e) => CheckForPendingRatings();
+            _ratingCheckTimer.Start();
         }
+
+        private void CheckForPendingRatings()
+        {
+            try
+            {
+                using (var context = new AppDbContext())
+                {
+                    DateTime limit = DateTime.Now.AddMinutes(-5);
+
+                    // Căutăm un hobby la care am participat, s-a terminat, și nu am dat rating
+                    var pendingHobby = context.Hobbies
+                        .Include(h => h.Users)
+                        .Where(h => h.Date < limit && h.Users.Any(u => u.Id == _currentUser.Id))
+                        .ToList() // Aducem în memorie pentru a putea verifica corect cu Ratings
+                        .FirstOrDefault(h => !context.Ratings.Any(r => r.HobbyId == h.Id && r.FromUserId == _currentUser.Id));
+
+                    if (pendingHobby != null)
+                    {
+                        ShowRatingPopup(pendingHobby);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Rating check error: " + ex.Message);
+            }
+        }
+
+        private void ShowRatingPopup(Hobby hobby)
+        {
+            // Deschidem fereastra de rating și îi pasăm hobby-ul și userul curent
+            RatingWindow ratingWin = new RatingWindow(hobby, _currentUser);
+
+            // O setăm să apară deasupra ferestrei principale, dar să nu blocheze totul (Show, nu ShowDialog)
+            // sau poți folosi ShowDialog() dacă vrei să fie obligatoriu să răspundă atunci
+            ratingWin.Owner = this;
+            ratingWin.ShowDialog();
+        }
+
 
         private void ShowChatButton(bool show)
         {
@@ -72,7 +120,15 @@ namespace Activity_Finder
                 int unread = context.ChatMessages.Count(m =>
                     myHobbyIds.Contains(m.HobbyId) &&
                     m.UserId != _currentUser.Id &&
-                    m.SentAt > _lastChatCheck);
+                    m.SentAt >
+                        (
+                            context.ChatReadStatuses
+                                .Where(r =>
+                                    r.UserId == _currentUser.Id &&
+                                    r.HobbyId == m.HobbyId)
+                                .Select(r => (DateTime?)r.LastReadAt)
+                                .FirstOrDefault() ?? DateTime.MinValue
+                        ));
 
                 if (unread > 0)
                 {
@@ -85,7 +141,6 @@ namespace Activity_Finder
                 }
             }
         }
-
         private void LoadRequestsBadge()
         {
             using (var context = new AppDbContext())
@@ -149,18 +204,44 @@ namespace Activity_Finder
             {
                 using (var context = new AppDbContext())
                 {
-                    var listaPostari = context.Hobbies
+                    var hobbies = context.Hobbies
                         .Include(h => h.User)
+                        .Include(h => h.Users) // <-- IMPORTANT: Aducem și lista de participanți acceptați
                         .Where(h => h.Date > DateTime.Now)
                         .OrderByDescending(h => h.CreatedAt)
                         .ToList();
 
-                    HobbyFeedControl.ItemsSource = listaPostari;
+                    foreach (var hobby in hobbies)
+                    {
+                        // 1. Calculăm rating-ul (codul tău existent)
+                        var ratingsForThisUser = context.Ratings
+                            .Where(r => r.ToUserId == hobby.UserId)
+                            .Select(r => r.Stars)
+                            .ToList();
+
+                        if (ratingsForThisUser.Any())
+                        {
+                            hobby.UserAverageRating = ratingsForThisUser.Average().ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            hobby.UserAverageRating = "N/A";
+                        }
+
+                        // 2. CALCULĂM LOCURILE RĂMASE
+                        // Locuri libere = Maximul setat - câți useri sunt deja în lista de participanți
+                        hobby.RemainingSpots = hobby.MaxPeople - hobby.Users.Count;
+
+                        // Opțional: dacă vrei să nu scadă sub 0 dintr-o eroare
+                        if (hobby.RemainingSpots < 0) hobby.RemainingSpots = 0;
+                    }
+
+                    HobbyFeedControl.ItemsSource = hobbies;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Eroare la încărcarea feed-ului: {ex.Message}");
+                CustomMessageBox.Show($"Eroare la încărcarea feed-ului: {ex.Message}");
             }
         }
 
@@ -183,6 +264,7 @@ namespace Activity_Finder
                 {
                     var all = db.Hobbies
                         .Include(h => h.User)
+                        .Include(h => h.Users)
                         .Where(h => h.Date > DateTime.Now)
                         .ToList();
 
@@ -190,6 +272,28 @@ namespace Activity_Finder
                         h.Latitude != 0 &&
                         GetDistanceKm(centerLat, centerLng, h.Latitude, h.Longitude) <= radiusKm
                     ).OrderByDescending(h => h.CreatedAt).ToList();
+
+                    // --- AICI ADAUGĂM LOGICA DE RATING PENTRU ELEMENTELE FILTRATE ---
+                    foreach (var hobby in filtered)
+                    {
+                        var ratingsForThisUser = db.Ratings
+                            .Where(r => r.ToUserId == hobby.UserId)
+                            .Select(r => r.Stars)
+                            .ToList();
+
+                        if (ratingsForThisUser.Any())
+                        {
+                            double average = ratingsForThisUser.Average();
+                            hobby.UserAverageRating = average.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            hobby.UserAverageRating = "N/A";
+                        }
+
+                        hobby.RemainingSpots = hobby.MaxPeople - hobby.Users.Count;
+                    }
+                    // ----------------------------------------------------------------
 
                     HobbyFeedControl.ItemsSource = filtered;
 
@@ -753,7 +857,7 @@ namespace Activity_Finder
             SearchArea.Visibility = Visibility.Collapsed;
             ShowChatButton(false);
 
-            _lastChatCheck = DateTime.Now;
+            
             LoadChatBadge();
 
             AnimateTransition();
@@ -790,7 +894,7 @@ namespace Activity_Finder
                         SearchArea.Visibility = Visibility.Collapsed;
                         ShowChatButton(false);
 
-                        _lastChatCheck = DateTime.Now;
+                        
                         LoadChatBadge();
 
                         AnimateTransition();

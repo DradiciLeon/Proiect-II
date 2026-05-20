@@ -30,7 +30,6 @@
     </UserControl.Resources>
 
     <Grid>
-        <!-- Butonul BACK -->
         <Button HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25" Cursor="Hand" Click="Back_Click" Panel.ZIndex="1">
             <Button.Template>
                 <ControlTemplate TargetType="Button">
@@ -44,10 +43,11 @@
             </Button.Template>
         </Button>
 
-        <!-- Card-ul alb fix -->
         <Border Background="#EFFFFFFF" CornerRadius="30" Margin="20,80,20,20" MaxWidth="560" MaxHeight="620" HorizontalAlignment="Center" VerticalAlignment="Top">
             <ScrollViewer VerticalScrollBarVisibility="Hidden" Padding="38,30">
-                <StackPanel>
+
+                <StackPanel Background="Transparent">
+
                     <TextBlock Text="POST YOUR HOBBY" FontSize="28" FontWeight="Black" Foreground="#2D3436" Margin="0,0,0,24" HorizontalAlignment="Center"/>
 
                     <TextBlock Text="HOBBY NAME" FontWeight="Bold" Foreground="#636E72" Margin="5,0,0,6"/>
@@ -55,23 +55,64 @@
                         <TextBox x:Name="HobbyNameInput" FontSize="16" FontWeight="SemiBold" Background="Transparent" BorderThickness="0" Padding="10" Foreground="#2D3436"/>
                     </Border>
 
+                    <TextBlock Text="DESCRIPTION (OPTIONAL)" FontWeight="Bold" Foreground="#636E72" Margin="5,0,0,6"/>
+                    <Border Background="White" CornerRadius="15" Margin="0,0,0,14" Padding="5">
+                        <TextBox x:Name="HobbyDescriptionInput" 
+                                 FontSize="14" 
+                                 FontWeight="SemiBold" 
+                                 Background="Transparent" 
+                                 BorderThickness="0" 
+                                 Padding="10" 
+                                 Foreground="#2D3436" 
+                                 TextWrapping="Wrap" 
+                                 AcceptsReturn="True" 
+                                 MinHeight="80" 
+                                 VerticalScrollBarVisibility="Auto"
+                                 Tag="Oferă câteva detalii despre activitate..."/>
+                    </Border>
+
                     <TextBlock Text="SELECT CATEGORY" FontWeight="Bold" Foreground="#636E72" Margin="5,0,0,6"/>
-                    <ListBox x:Name="CategorySelector" Background="Transparent" BorderThickness="0" Margin="0,0,0,14" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox x:Name="CategorySelector" 
+                             PreviewMouseWheel="CategorySelector_PreviewMouseWheel"
+                             Background="Transparent" 
+                             BorderThickness="0" 
+                             Margin="0,0,0,14" 
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel />
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Sport"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Hiking"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Gaming"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Parties"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Music"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Cooking"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Tech"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Fitness"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Travel"/>
-                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="Other"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="⚽ Sport"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🏋️ Fitness"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🧘 Yoga"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🏃 Running"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🥾 Hiking"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🌲 Outdoors"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🏕️ Camping"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🚴 Cycling"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🎮 Gaming"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🎲 Board Games"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🎬 Movies"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="📺 TV Shows"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🎉 Parties"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="☕ Coffee"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🎤 Karaoke"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🍳 Cooking"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🍰 Baking"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🍔 Food"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🎵 Music"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🎨 Art"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="📸 Photography"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="📚 Reading"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="✍️ Writing"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="✈️ Travel"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="💻 Tech"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="👨‍💻 Programming"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🌍 Languages"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="🐶 Pets"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="❤️ Volunteering"/>
+                        <ListBoxItem Style="{StaticResource CategoryOptionStyle}" Content="✨ Other"/>
                     </ListBox>
 
                     <Grid Margin="0,0,0,14">
@@ -97,16 +138,12 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- ZONA MODIFICATĂ PENTRU AUTOCOMPLETE -->
                     <TextBlock Text="LOCATION (ADDRESS / CITY)" FontWeight="Bold" Foreground="#636E72" Margin="5,0,0,6"/>
                     <Grid Margin="0,0,0,14">
                         <StackPanel>
                             <Border Background="White" CornerRadius="15" Padding="5">
-                                <!-- Evenimentul TextChanged adăugat aici -->
                                 <TextBox x:Name="CityInput" TextChanged="CityInput_TextChanged" FontSize="16" FontWeight="SemiBold" Background="Transparent" BorderThickness="0" Padding="10" Foreground="#2D3436" Tag="Ex: Bucuresti, Cluj-Napoca..."/>
                             </Border>
-
-                            <!-- Cutia cu sugestii (ascunsă la început) -->
                             <Border x:Name="SuggestionsBorder" Background="White" CornerRadius="10" Margin="0,5,0,0" Visibility="Collapsed">
                                 <Border.Effect>
                                     <DropShadowEffect BlurRadius="10" Opacity="0.1" ShadowDepth="2"/>
@@ -114,7 +151,6 @@
                                 <ListBox x:Name="LocationSuggestionsBox" MaxHeight="150" BorderThickness="0" Background="Transparent" SelectionChanged="LocationSuggestionsBox_SelectionChanged">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
-                                            <!-- Fiecare sugestie arată ca un buton text -->
                                             <TextBlock Text="{Binding}" Padding="10,8" FontSize="14" Foreground="#2D3436" Cursor="Hand" TextWrapping="Wrap"/>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
@@ -154,6 +190,7 @@
                             <DropShadowEffect BlurRadius="20" Opacity="0.2" ShadowDepth="2" Color="#FF6B6B"/>
                         </Button.Effect>
                     </Button>
+
                 </StackPanel>
             </ScrollViewer>
         </Border>

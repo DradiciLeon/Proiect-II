@@ -26,18 +26,18 @@ namespace Activity_Finder.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SupportMessages",
+                name: "ChatReadStatuses",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    HobbyId = table.Column<int>(type: "int", nullable: false),
+                    LastReadAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SupportMessages", x => x.Id);
+                    table.PrimaryKey("PK_ChatReadStatuses", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -89,6 +89,29 @@ namespace Activity_Finder.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SupportMessages",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsSolved = table.Column<bool>(type: "bit", nullable: false),
+                    AdminReply = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SupportMessages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SupportMessages_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -191,6 +214,62 @@ namespace Activity_Finder.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Ratings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    HobbyId = table.Column<int>(type: "int", nullable: false),
+                    FromUserId = table.Column<int>(type: "int", nullable: false),
+                    ToUserId = table.Column<int>(type: "int", nullable: false),
+                    Stars = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Ratings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Ratings_Hobbies_HobbyId",
+                        column: x => x.HobbyId,
+                        principalTable: "Hobbies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Ratings_Users_FromUserId",
+                        column: x => x.FromUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ChatMessageSeens",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ChatMessageId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    SeenAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ChatMessageSeens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ChatMessageSeens_ChatMessages_ChatMessageId",
+                        column: x => x.ChatMessageId,
+                        principalTable: "ChatMessages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ChatMessageSeens_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_ChatMessages_HobbyId",
                 table: "ChatMessages",
@@ -199,6 +278,16 @@ namespace Activity_Finder.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ChatMessages_UserId",
                 table: "ChatMessages",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChatMessageSeens_ChatMessageId",
+                table: "ChatMessageSeens",
+                column: "ChatMessageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChatMessageSeens_UserId",
+                table: "ChatMessageSeens",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -222,6 +311,21 @@ namespace Activity_Finder.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Ratings_FromUserId",
+                table: "Ratings",
+                column: "FromUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Ratings_HobbyId",
+                table: "Ratings",
+                column: "HobbyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportMessages_UserId",
+                table: "SupportMessages",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserInterests_UserId",
                 table: "UserInterests",
                 column: "UserId");
@@ -234,7 +338,10 @@ namespace Activity_Finder.Migrations
                 name: "Admins");
 
             migrationBuilder.DropTable(
-                name: "ChatMessages");
+                name: "ChatMessageSeens");
+
+            migrationBuilder.DropTable(
+                name: "ChatReadStatuses");
 
             migrationBuilder.DropTable(
                 name: "HobbyParticipants");
@@ -243,10 +350,16 @@ namespace Activity_Finder.Migrations
                 name: "JoinRequests");
 
             migrationBuilder.DropTable(
+                name: "Ratings");
+
+            migrationBuilder.DropTable(
                 name: "SupportMessages");
 
             migrationBuilder.DropTable(
                 name: "UserInterests");
+
+            migrationBuilder.DropTable(
+                name: "ChatMessages");
 
             migrationBuilder.DropTable(
                 name: "Hobbies");
