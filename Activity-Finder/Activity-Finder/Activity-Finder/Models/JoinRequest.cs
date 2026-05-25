@@ -16,4 +16,5 @@ namespace Activity_Finder.Models
 
         public DateTime RequestedAt { get; set; } = DateTime.Now;
     }
+  
 }

@@ -177,7 +177,7 @@
 
                                             <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
                                                 <TextBlock Text="by " FontSize="12" Foreground="#B2BEC3" FontWeight="SemiBold"/>
-                                                <TextBlock Text="{Binding User.DisplayName}" FontSize="12" Foreground="#636E72" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding User.Username}" FontSize="12" Foreground="#636E72" FontWeight="Bold"/>
                                             </StackPanel>
 
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">

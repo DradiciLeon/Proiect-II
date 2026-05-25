@@ -4,10 +4,10 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+
 namespace Activity_Finder
 {
     public class ChatMessageUI
@@ -31,32 +31,61 @@ namespace Activity_Finder
         public string SeenByText { get; set; }
 
         public Visibility SeenVisibility { get; set; }
+
         public int UserId { get; set; }
     }
+
     public partial class ChatWindow : UserControl
     {
         private readonly User _currentUser;
         private readonly Hobby _hobby;
 
-        public ChatWindow(Hobby hobby,User currentUser)
+        private bool _isArchived = false;
+
+        public ChatWindow(Hobby hobby, User currentUser)
         {
             InitializeComponent();
+
             _hobby = hobby;
             _currentUser = currentUser;
-            ;
 
             ChatTitleText.Text = hobby.Name;
+
+            CheckIfConversationIsArchived();
 
             LoadMessages();
             MarkChatAsRead();
         }
+
+        private void CheckIfConversationIsArchived()
+        {
+            if (_hobby.Date.HasValue && _hobby.Date.Value.AddDays(1) < DateTime.Now)
+            {
+                _isArchived = true;
+
+                MessageTextBox.IsEnabled = false;
+                SendButton.IsEnabled = false;
+
+                MessageTextBox.Text = "Conversația este arhivată. Poți doar să citești mesajele.";
+            }
+        }
+
         private void EmojiButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_isArchived)
+            {
+                CustomMessageBox.Show("Conversația este arhivată. Nu mai poți trimite mesaje.");
+                return;
+            }
+
             EmojiPopup.IsOpen = true;
         }
 
         private void Emoji_Click(object sender, RoutedEventArgs e)
         {
+            if (_isArchived)
+                return;
+
             if (sender is Button btn && btn.Content != null)
             {
                 string emoji = btn.Content.ToString();
@@ -74,6 +103,7 @@ namespace Activity_Finder
                 EmojiPopup.IsOpen = false;
             }
         }
+
         private void MarkChatAsRead()
         {
             using (var context = new AppDbContext())
@@ -101,6 +131,7 @@ namespace Activity_Finder
                 context.SaveChanges();
             }
         }
+
         private void LoadMessages()
         {
             using (var context = new AppDbContext())
@@ -109,7 +140,8 @@ namespace Activity_Finder
                     .Include(m => m.User)
                     .Where(m => m.HobbyId == _hobby.Id)
                     .OrderBy(m => m.SentAt)
-                    .ToList(); 
+                    .ToList();
+
                 foreach (var message in messages)
                 {
                     if (message.UserId == _currentUser.Id)
@@ -142,32 +174,32 @@ namespace Activity_Finder
                     ProfileImagePath = m.User.ProfileImagePath,
 
                     ShowAvatar = m.UserId == _currentUser.Id
-          ? Visibility.Collapsed
-          : Visibility.Visible,
+                        ? Visibility.Collapsed
+                        : Visibility.Visible,
 
                     Alignment = m.UserId == _currentUser.Id
-          ? HorizontalAlignment.Right
-          : HorizontalAlignment.Left,
+                        ? HorizontalAlignment.Right
+                        : HorizontalAlignment.Left,
 
                     BubbleColor = m.UserId == _currentUser.Id
-          ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD6D6"))
-          : Brushes.White,
+                        ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD6D6"))
+                        : Brushes.White,
 
                     SenderColor = m.UserId == _currentUser.Id
-          ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6B6B"))
-          : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#636E72")),
+                        ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6B6B"))
+                        : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#636E72")),
 
-                 BubbleCornerRadius = m.UserId == _currentUser.Id
-    ? new CornerRadius(20, 20, 5, 20)
-    : new CornerRadius(20, 20, 20, 5),
+                    BubbleCornerRadius = m.UserId == _currentUser.Id
+                        ? new CornerRadius(20, 20, 5, 20)
+                        : new CornerRadius(20, 20, 20, 5),
 
-SeenByText = GetSeenByText(context, m.Id, m.UserId),
+                    SeenByText = GetSeenByText(context, m.Id, m.UserId),
 
                     SeenVisibility = Visibility.Collapsed,
 
                 }).ToList();
-                MessagesList.ItemsSource = uiMessages;
 
+                MessagesList.ItemsSource = uiMessages;
 
                 if (MessagesList.Items.Count > 0)
                 {
@@ -175,6 +207,7 @@ SeenByText = GetSeenByText(context, m.Id, m.UserId),
                 }
             }
         }
+
         private string GetSeenByText(AppDbContext context, int messageId, int senderId)
         {
             var seenUsers = context.ChatMessageSeens
@@ -187,6 +220,7 @@ SeenByText = GetSeenByText(context, m.Id, m.UserId),
 
             return "Seen by " + string.Join(", ", seenUsers);
         }
+
         private void SendButton_Click(object sender, RoutedEventArgs e)
         {
             SendMessage();
@@ -202,6 +236,12 @@ SeenByText = GetSeenByText(context, m.Id, m.UserId),
 
         private void SendMessage()
         {
+            if (_isArchived)
+            {
+                CustomMessageBox.Show("Conversația este arhivată. Poți doar să citești mesajele.");
+                return;
+            }
+
             string text = MessageTextBox.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(text))
@@ -225,6 +265,7 @@ SeenByText = GetSeenByText(context, m.Id, m.UserId),
 
             LoadMessages();
         }
+
         private void Avatar_Click(object sender, MouseButtonEventArgs e)
         {
             if (sender is Ellipse ellipse && ellipse.Tag is int userId)
@@ -263,11 +304,11 @@ SeenByText = GetSeenByText(context, m.Id, m.UserId),
                             StartPoint = new Point(0, 0),
                             EndPoint = new Point(1, 1),
                             GradientStops =
-                    {
-                        new GradientStop((Color)ColorConverter.ConvertFromString("#FF6B6B"), 0),
-                        new GradientStop((Color)ColorConverter.ConvertFromString("#FF9E5E"), 0.55),
-                        new GradientStop((Color)ColorConverter.ConvertFromString("#FFD93D"), 1)
-                    }
+                            {
+                                new GradientStop((Color)ColorConverter.ConvertFromString("#FF6B6B"), 0),
+                                new GradientStop((Color)ColorConverter.ConvertFromString("#FF9E5E"), 0.55),
+                                new GradientStop((Color)ColorConverter.ConvertFromString("#FFD93D"), 1)
+                            }
                         }
                     };
 
@@ -309,6 +350,7 @@ SeenByText = GetSeenByText(context, m.Id, m.UserId),
                 }
             }
         }
+
         private void MessageBubble_Click(object sender, MouseButtonEventArgs e)
         {
             if (sender is Border border)
@@ -333,15 +375,11 @@ SeenByText = GetSeenByText(context, m.Id, m.UserId),
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
-            // Căutăm fereastra principală (HomePage)
             var homePage = Window.GetWindow(this) as HomePage;
 
             if (homePage != null)
             {
-                // În loc să închidem fereastra, încărcăm înapoi lista de conversații
                 homePage.MainContentArea.Content = new ConversationsWindow(_currentUser);
-
-                // Actualizăm și titlul din header pentru a fi corect
                 homePage.HeaderTitle.Text = "📩 CONVERSATIONS";
             }
         }

@@ -1,11 +1,15 @@
 ﻿using Activity_Finder.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace Activity_Finder
@@ -18,18 +22,22 @@ namespace Activity_Finder
         private DispatcherTimer _notificationTimer;
         private DispatcherTimer _chatTimer;
         private DispatcherTimer _ratingCheckTimer;
-        
 
         private SolidColorBrush _activeColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6B6B"));
 
+        private class MissedJoinNotification
+        {
+            public int UserId { get; set; }
+            public string Username { get; set; }
+            public string ProfileImagePath { get; set; }
+            public string HobbyName { get; set; }
+        }
+
         public HomePage(User user)
         {
-
             InitializeComponent();
-           
 
             _currentUser = user;
-           
 
             LoadHobbyFeed();
 
@@ -42,7 +50,7 @@ namespace Activity_Finder
             ShowChatButton(true);
 
             _ratingCheckTimer = new DispatcherTimer();
-            _ratingCheckTimer.Interval = TimeSpan.FromMinutes(1); // Verificăm în fiecare minut
+            _ratingCheckTimer.Interval = TimeSpan.FromMinutes(1);
             _ratingCheckTimer.Tick += (s, e) => CheckForPendingRatings();
             _ratingCheckTimer.Start();
         }
@@ -55,11 +63,10 @@ namespace Activity_Finder
                 {
                     DateTime limit = DateTime.Now.AddMinutes(-5);
 
-                    // Căutăm un hobby la care am participat, s-a terminat, și nu am dat rating
                     var pendingHobby = context.Hobbies
                         .Include(h => h.Users)
                         .Where(h => h.Date < limit && h.Users.Any(u => u.Id == _currentUser.Id))
-                        .ToList() // Aducem în memorie pentru a putea verifica corect cu Ratings
+                        .ToList()
                         .FirstOrDefault(h => !context.Ratings.Any(r => r.HobbyId == h.Id && r.FromUserId == _currentUser.Id));
 
                     if (pendingHobby != null)
@@ -76,15 +83,10 @@ namespace Activity_Finder
 
         private void ShowRatingPopup(Hobby hobby)
         {
-            // Deschidem fereastra de rating și îi pasăm hobby-ul și userul curent
             RatingWindow ratingWin = new RatingWindow(hobby, _currentUser);
-
-            // O setăm să apară deasupra ferestrei principale, dar să nu blocheze totul (Show, nu ShowDialog)
-            // sau poți folosi ShowDialog() dacă vrei să fie obligatoriu să răspundă atunci
             ratingWin.Owner = this;
             ratingWin.ShowDialog();
         }
-
 
         private void ShowChatButton(bool show)
         {
@@ -98,6 +100,7 @@ namespace Activity_Finder
             _chatTimer.Tick += (s, e) => LoadChatBadge();
             _chatTimer.Start();
         }
+
         private void LoadChatBadge()
         {
             BtnChat.ApplyTemplate();
@@ -121,14 +124,14 @@ namespace Activity_Finder
                     myHobbyIds.Contains(m.HobbyId) &&
                     m.UserId != _currentUser.Id &&
                     m.SentAt >
-                        (
-                            context.ChatReadStatuses
-                                .Where(r =>
-                                    r.UserId == _currentUser.Id &&
-                                    r.HobbyId == m.HobbyId)
-                                .Select(r => (DateTime?)r.LastReadAt)
-                                .FirstOrDefault() ?? DateTime.MinValue
-                        ));
+                    (
+                        context.ChatReadStatuses
+                            .Where(r =>
+                                r.UserId == _currentUser.Id &&
+                                r.HobbyId == m.HobbyId)
+                            .Select(r => (DateTime?)r.LastReadAt)
+                            .FirstOrDefault() ?? DateTime.MinValue
+                    ));
 
                 if (unread > 0)
                 {
@@ -141,6 +144,7 @@ namespace Activity_Finder
                 }
             }
         }
+
         private void LoadRequestsBadge()
         {
             using (var context = new AppDbContext())
@@ -160,6 +164,50 @@ namespace Activity_Finder
                 }
             }
         }
+        private List<MissedJoinNotification> MarkPendingJoinRequestsAsMissed()
+        {
+            using (var context = new AppDbContext())
+            {
+                DateTime now = DateTime.Now;
+
+                // cu 10 minute înainte
+                DateTime limit = now.AddMinutes(10);
+
+                // verificăm cererile USERULUI CURENT
+                var missedRequests = context.JoinRequests
+                    .Include(r => r.User)
+                    .Include(r => r.Hobby)
+                    .Where(r =>
+                        r.UserId == _currentUser.Id &&
+                        r.Status == "Pending" &&
+                        r.Hobby.Date.HasValue &&
+                        r.Hobby.Date.Value > now &&
+                        r.Hobby.Date.Value <= limit)
+                    .ToList();
+
+                var notifications = missedRequests
+                    .Select(r => new MissedJoinNotification
+                    {
+                        UserId = r.User.Id,
+                        Username = r.User.Username,
+                        ProfileImagePath = GetUserProfileImagePath(r.User),
+                        HobbyName = r.Hobby.Name
+                    })
+                    .ToList();
+
+                // marcăm ca MissedJoin
+                foreach (var request in missedRequests)
+                {
+                    request.Status = "MissedJoin";
+                }
+
+                if (missedRequests.Any())
+                    context.SaveChanges();
+
+                return notifications;
+            }
+        }
+
 
         private void StartJoinRequestNotifications()
         {
@@ -178,6 +226,13 @@ namespace Activity_Finder
 
         private void CheckForNewJoinRequests()
         {
+            var missedNotifications = MarkPendingJoinRequestsAsMissed();
+
+            foreach (var item in missedNotifications)
+            {
+                ShowMissedJoinPopup(item);
+            }
+
             using (var context = new AppDbContext())
             {
                 int currentCount = context.JoinRequests.Count(r =>
@@ -198,6 +253,155 @@ namespace Activity_Finder
             LoadRequestsBadge();
         }
 
+        private string GetUserProfileImagePath(User user)
+        {
+            var possibleNames = new[]
+            {
+                "ProfileImagePath",
+                "ProfilePicturePath",
+                "ImagePath",
+                "AvatarPath",
+                "PhotoPath"
+            };
+
+            foreach (var name in possibleNames)
+            {
+                var prop = user.GetType().GetProperty(name);
+                if (prop != null)
+                {
+                    var value = prop.GetValue(user) as string;
+                    if (!string.IsNullOrWhiteSpace(value))
+                        return value;
+                }
+            }
+
+            return null;
+        }
+
+        private void ShowMissedJoinPopup(MissedJoinNotification item)
+        {
+            Window popup = new Window
+            {
+                Width = 430,
+                Height = 420,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ResizeMode = ResizeMode.NoResize,
+                WindowStyle = WindowStyle.None,
+                AllowsTransparency = true,
+                Background = Brushes.Transparent,
+                Owner = this,
+                ShowInTaskbar = false
+            };
+
+            Border outer = new Border
+            {
+                CornerRadius = new CornerRadius(28),
+                Padding = new Thickness(8),
+                Background = new LinearGradientBrush
+                {
+                    StartPoint = new Point(0, 0),
+                    EndPoint = new Point(1, 1),
+                    GradientStops =
+                    {
+                        new GradientStop((Color)ColorConverter.ConvertFromString("#FF6B6B"), 0),
+                        new GradientStop((Color)ColorConverter.ConvertFromString("#FFD93D"), 1)
+                    }
+                }
+            };
+
+            Border card = new Border
+            {
+                Background = Brushes.White,
+                CornerRadius = new CornerRadius(24),
+                Padding = new Thickness(24)
+            };
+
+            StackPanel panel = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            TextBlock title = new TextBlock
+            {
+                Text = "⚠ Missed Join",
+                FontSize = 26,
+                FontWeight = FontWeights.Black,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6B6B")),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, 18)
+            };
+
+            Image profileImage = new Image
+            {
+                Width = 90,
+                Height = 90,
+                Stretch = Stretch.UniformToFill,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+
+            if (!string.IsNullOrWhiteSpace(item.ProfileImagePath) && File.Exists(item.ProfileImagePath))
+            {
+                profileImage.Source = new BitmapImage(new Uri(item.ProfileImagePath, UriKind.Absolute));
+            }
+
+            TextBlock name = new TextBlock
+            {
+                Text = item.Username,
+                FontSize = 20,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6B6B")),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Cursor = Cursors.Hand,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+
+            name.MouseLeftButtonUp += (s, e) =>
+            {
+                popup.Close();
+                OpenOrganizerProfile(item.UserId);
+            };
+
+            TextBlock message = new TextBlock
+            {
+                Text =
+                    $"Cererea de join pentru activitatea:\n\n" +
+                    $"„{item.HobbyName}”\n\n" +
+                    $"nu a fost acceptată sau respinsă la timp.\n\n"+
+                    $"Nu mai poți participa la această activitate.",
+                FontSize = 15,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2D3436")),
+                Margin = new Thickness(0, 8, 0, 20)
+            };
+
+            Button okButton = new Button
+            {
+                Content = "OK",
+                Width = 110,
+                Height = 40,
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF6B6B")),
+                Foreground = Brushes.White,
+                BorderThickness = new Thickness(0),
+                FontWeight = FontWeights.Bold,
+                Cursor = Cursors.Hand
+            };
+
+            okButton.Click += (s, e) => popup.Close();
+
+            panel.Children.Add(title);
+            panel.Children.Add(profileImage);
+            panel.Children.Add(name);
+            panel.Children.Add(message);
+            panel.Children.Add(okButton);
+
+            card.Child = panel;
+            outer.Child = card;
+            popup.Content = outer;
+
+            popup.ShowDialog();
+        }
+
         public void LoadHobbyFeed()
         {
             try
@@ -206,34 +410,27 @@ namespace Activity_Finder
                 {
                     var hobbies = context.Hobbies
                         .Include(h => h.User)
-                        .Include(h => h.Users) // <-- IMPORTANT: Aducem și lista de participanți acceptați
+                        .Include(h => h.Users)
                         .Where(h => h.Date > DateTime.Now)
                         .OrderByDescending(h => h.CreatedAt)
                         .ToList();
 
                     foreach (var hobby in hobbies)
                     {
-                        // 1. Calculăm rating-ul (codul tău existent)
                         var ratingsForThisUser = context.Ratings
                             .Where(r => r.ToUserId == hobby.UserId)
                             .Select(r => r.Stars)
                             .ToList();
 
                         if (ratingsForThisUser.Any())
-                        {
                             hobby.UserAverageRating = ratingsForThisUser.Average().ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-                        }
                         else
-                        {
                             hobby.UserAverageRating = "N/A";
-                        }
 
-                        // 2. CALCULĂM LOCURILE RĂMASE
-                        // Locuri libere = Maximul setat - câți useri sunt deja în lista de participanți
                         hobby.RemainingSpots = hobby.MaxPeople - hobby.Users.Count;
 
-                        // Opțional: dacă vrei să nu scadă sub 0 dintr-o eroare
-                        if (hobby.RemainingSpots < 0) hobby.RemainingSpots = 0;
+                        if (hobby.RemainingSpots < 0)
+                            hobby.RemainingSpots = 0;
                     }
 
                     HobbyFeedControl.ItemsSource = hobbies;
@@ -273,7 +470,6 @@ namespace Activity_Finder
                         GetDistanceKm(centerLat, centerLng, h.Latitude, h.Longitude) <= radiusKm
                     ).OrderByDescending(h => h.CreatedAt).ToList();
 
-                    // --- AICI ADAUGĂM LOGICA DE RATING PENTRU ELEMENTELE FILTRATE ---
                     foreach (var hobby in filtered)
                     {
                         var ratingsForThisUser = db.Ratings
@@ -293,7 +489,6 @@ namespace Activity_Finder
 
                         hobby.RemainingSpots = hobby.MaxPeople - hobby.Users.Count;
                     }
-                    // ----------------------------------------------------------------
 
                     HobbyFeedControl.ItemsSource = filtered;
 
@@ -478,7 +673,8 @@ namespace Activity_Finder
                     }
 
                     string organizerName = hobbyDb.User != null ? hobbyDb.User.Username : "Unknown";
-                    int locuriRamase = hobbyDb.MaxPeople - hobbyDb.Users.Count;
+
+                    int locuriRamase = Math.Max(0, hobbyDb.MaxPeople - hobbyDb.Users.Count);
 
                     Window detailsWindow = new Window
                     {
@@ -599,6 +795,15 @@ namespace Activity_Finder
                         Margin = new Thickness(0, 0, 10, 0)
                     };
 
+                    if (locuriRamase <= 0)
+                    {
+                        joinButton.IsEnabled = false;
+                        joinButton.Content = "FULL";
+                        joinButton.Background =
+                            new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B2BEC3"));
+                        joinButton.Foreground = Brushes.White;
+                    }
+
                     Button profileButton = new Button
                     {
                         Content = "View Profile",
@@ -613,6 +818,15 @@ namespace Activity_Finder
 
                     joinButton.Click += (s, ev) =>
                     {
+                        if (locuriRamase <= 0)
+                        {
+                            CustomMessageBox.Show(
+                                "Nu mai poți trimite cerere deoarece activitatea este full.",
+                                "Activitate full"
+                            );
+                            return;
+                        }
+
                         detailsWindow.Close();
                         JoinSelectedHobby(hobbyDb.Id);
                     };
@@ -642,9 +856,7 @@ namespace Activity_Finder
                 }
             }
         }
-
- 
-
+     
         private void JoinSelectedHobby(int hobbyId)
         {
             try
@@ -665,25 +877,37 @@ namespace Activity_Finder
 
                     if (hobby.UserId == _currentUser.Id)
                     {
-                        CustomMessageBox.Show("Nu poți trimite cerere la propria activitate.", "Cerere blocată");
+                        CustomMessageBox.Show(
+                            "Nu poți trimite cerere la propria activitate.",
+                            "Cerere blocată"
+                        );
                         return;
                     }
 
                     if (hobby.Date <= DateTime.Now)
                     {
-                        CustomMessageBox.Show("Activitatea s-a încheiat.", "Activitate încheiată");
+                        CustomMessageBox.Show(
+                            "Activitatea s-a încheiat.",
+                            "Activitate încheiată"
+                        );
                         return;
                     }
 
                     if (hobby.Users.Any(u => u.Id == _currentUser.Id))
                     {
-                        CustomMessageBox.Show("Ești deja acceptat la această activitate.", "Deja acceptat");
+                        CustomMessageBox.Show(
+                            "Ești deja acceptat la această activitate.",
+                            "Deja acceptat"
+                        );
                         return;
                     }
 
                     if (hobby.Users.Count >= hobby.MaxPeople)
                     {
-                        CustomMessageBox.Show("Activitatea este plină.", "Activitate plină");
+                        CustomMessageBox.Show(
+                            "Activitatea este plină.",
+                            "Activitate plină"
+                        );
                         return;
                     }
 
@@ -694,30 +918,48 @@ namespace Activity_Finder
 
                     if (alreadyPending)
                     {
-                        CustomMessageBox.Show("Ai trimis deja o cerere pentru această activitate.", "Cerere existentă");
+                        CustomMessageBox.Show(
+                            "Ai trimis deja o cerere pentru această activitate.",
+                            "Cerere existentă"
+                        );
                         return;
                     }
 
-                    var rejectedRequest = context.JoinRequests.FirstOrDefault(r =>
+                    // NU mai permitem retrimiterea după reject
+                    bool wasRejected = context.JoinRequests.Any(r =>
                         r.HobbyId == hobby.Id &&
                         r.UserId == _currentUser.Id &&
                         r.Status == "Rejected");
+                    bool missedJoin = context.JoinRequests.Any(r =>
+    r.HobbyId == hobby.Id &&
+    r.UserId == _currentUser.Id &&
+    r.Status == "MissedJoin");
 
-                    if (rejectedRequest != null)
+                    if (missedJoin)
                     {
-                        rejectedRequest.Status = "Pending";
-                        rejectedRequest.RequestedAt = DateTime.Now;
+                        CustomMessageBox.Show(
+                            "Nu mai poți trimite cerere deoarece organizatorul nu a văzut cererea la timp.",
+                            "Missed Join"
+                        );
+                        return;
                     }
-                    else
+
+                    if (wasRejected)
                     {
-                        context.JoinRequests.Add(new JoinRequest
-                        {
-                            HobbyId = hobby.Id,
-                            UserId = _currentUser.Id,
-                            Status = "Pending",
-                            RequestedAt = DateTime.Now
-                        });
+                        CustomMessageBox.Show(
+                            "Nu mai poți trimite cerere deoarece ai fost respins de organizator.",
+                            "Cerere respinsă"
+                        );
+                        return;
                     }
+
+                    context.JoinRequests.Add(new JoinRequest
+                    {
+                        HobbyId = hobby.Id,
+                        UserId = _currentUser.Id,
+                        Status = "Pending",
+                        RequestedAt = DateTime.Now
+                    });
 
                     context.SaveChanges();
 
@@ -731,7 +973,9 @@ namespace Activity_Finder
             }
             catch (Exception ex)
             {
-                CustomMessageBox.Show("Eroare la trimiterea cererii: " + ex.Message);
+                CustomMessageBox.Show(
+                    "Eroare la trimiterea cererii: " + ex.Message
+                );
             }
         }
 
@@ -779,11 +1023,11 @@ namespace Activity_Finder
                         StartPoint = new Point(0, 0),
                         EndPoint = new Point(1, 1),
                         GradientStops =
-                {
-                    new GradientStop((Color)ColorConverter.ConvertFromString("#FF6B6B"), 0),
-                    new GradientStop((Color)ColorConverter.ConvertFromString("#FF9E5E"), 0.55),
-                    new GradientStop((Color)ColorConverter.ConvertFromString("#FFD93D"), 1)
-                }
+                        {
+                            new GradientStop((Color)ColorConverter.ConvertFromString("#FF6B6B"), 0),
+                            new GradientStop((Color)ColorConverter.ConvertFromString("#FF9E5E"), 0.55),
+                            new GradientStop((Color)ColorConverter.ConvertFromString("#FFD93D"), 1)
+                        }
                     }
                 };
 
@@ -857,7 +1101,6 @@ namespace Activity_Finder
             SearchArea.Visibility = Visibility.Collapsed;
             ShowChatButton(false);
 
-            
             LoadChatBadge();
 
             AnimateTransition();
@@ -894,7 +1137,6 @@ namespace Activity_Finder
                         SearchArea.Visibility = Visibility.Collapsed;
                         ShowChatButton(false);
 
-                        
                         LoadChatBadge();
 
                         AnimateTransition();
@@ -912,7 +1154,5 @@ namespace Activity_Finder
                 CustomMessageBox.Show("Eroare la deschiderea chat-ului: " + ex.Message);
             }
         }
-
-      
     }
 }
