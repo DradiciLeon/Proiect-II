@@ -8,6 +8,7 @@ namespace Activity_Finder
 {
     public partial class AdminWindow : Window
     {
+        private int _ticketToSolveId = 0;
         public AdminWindow()
         {
             InitializeComponent();
@@ -21,8 +22,6 @@ namespace Activity_Finder
             {
                 using (var context = new AppDbContext())
                 {
-                    // 1. Încărcare Useri (pentru primul tab)
-                    // Calculăm un "Score" simplu bazat pe numărul de hobby-uri postate de fiecare user
                     var usersList = context.Users
                         .Include(u => u.Hobbies)
                         .Select(u => new
@@ -30,16 +29,16 @@ namespace Activity_Finder
                             u.Id,
                             u.Username,
                             u.Email,
-                            Score = u.Hobbies.Count * 10 // Ranking: 10 puncte per postare
+                            Score = u.Hobbies.Count * 10
                         })
                         .ToList();
-
                     UsersGrid.ItemsSource = usersList;
 
-                    // 2. Încărcare Postări (pentru al doilea tab)
-                    var postsDb = context.Hobbies.Include(h => h.User).ToList();
+                    var postsDb = context.Hobbies
+                        .Include(h => h.User)
+                        .Include(h => h.Users)
+                        .ToList();
 
-                    // Acum le formatăm în memorie:
                     var postsList = postsDb.Select(h => new
                     {
                         h.Id,
@@ -47,18 +46,76 @@ namespace Activity_Finder
                         Category = h.Category,
                         Author = h.User != null ? h.User.Username : "Utilizator șters",
                         Description = h.Description,
-                        // Verificăm dacă Data are valoare, altfel afișăm ceva default
-                        Date = h.Date.HasValue ? h.Date.Value.ToString("dd MMM yyyy HH:mm") : "Nesetată",
-                        PeopleCount = h.MaxPeople
+                        Location = h.City,
+                        Time = h.Date.HasValue ? h.Date.Value.ToString("HH:mm") : "Nesetată",
+                        Date = h.Date.HasValue ? h.Date.Value.ToString("dd MMM yyyy") : "Nesetată",
+                        Participants = h.Users != null && h.Users.Any()
+                            ? string.Join(", ", h.Users.Select(u => u.Username))
+                            : "❌ Niciun participant înscris încă"
+                    }).ToList();
+                    PostsGrid.ItemsSource = postsList;
+
+                    var supportDb = context.SupportMessages
+    .Include(s => s.User)
+    .OrderBy(s => s.IsSolved)
+    .ThenByDescending(s => s.SentAt)
+    .ToList(); // Executăm SQL-ul mai întâi și aducem în memorie
+
+                    var supportList = supportDb.Select(s => new
+                    {
+                        s.Id,
+                        Author = s.User != null ? s.User.Username : "Anonim",
+                        s.Message,
+                        Date = s.SentAt.ToString("dd MMM yyyy HH:mm"),
+                        Status = s.IsSolved ? "Rezolvat" : "În așteptare",
+                        IsNotSolved = !s.IsSolved,
+                        s.AdminReply,
+                        ReplyVisibility = !string.IsNullOrWhiteSpace(s.AdminReply) ? Visibility.Visible : Visibility.Collapsed
                     }).ToList();
 
-                    PostsGrid.ItemsSource = postsList;
+                    SupportGrid.ItemsSource = supportList;
                 }
             }
             catch (System.Exception ex)
             {
                 MessageBox.Show("Eroare la încărcarea datelor de administrare: " + ex.Message);
             }
+        }
+
+        private void SolveTicket_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            dynamic selectedTicket = btn.DataContext;
+            _ticketToSolveId = selectedTicket.Id;
+
+            TxtAdminReply.Clear();
+            ReplyPopup.Visibility = Visibility.Visible;
+        }
+
+        private void CancelReply_Click(object sender, RoutedEventArgs e)
+        {
+            ReplyPopup.Visibility = Visibility.Collapsed;
+            _ticketToSolveId = 0;
+        }
+
+        private void ConfirmSolve_Click(object sender, RoutedEventArgs e)
+        {
+            if (_ticketToSolveId == 0) return;
+
+            using (var context = new AppDbContext())
+            {
+                var ticketDb = context.SupportMessages.Find(_ticketToSolveId);
+                if (ticketDb != null)
+                {
+                    ticketDb.IsSolved = true;
+                    ticketDb.AdminReply = TxtAdminReply.Text.Trim();
+                    context.SaveChanges();
+                    LoadData();
+                }
+            }
+
+            ReplyPopup.Visibility = Visibility.Collapsed;
+            _ticketToSolveId = 0;
         }
 
         // Eveniment pentru butonul BAN USER

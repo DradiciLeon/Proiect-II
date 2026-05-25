@@ -240,6 +240,13 @@ namespace Activity_Finder.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AdminReply")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsSolved")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -251,6 +258,8 @@ namespace Activity_Finder.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("SupportMessages");
                 });
@@ -431,6 +440,17 @@ namespace Activity_Finder.Migrations
                     b.Navigation("FromUser");
 
                     b.Navigation("Hobby");
+                });
+
+            modelBuilder.Entity("Activity_Finder.Models.SupportMessage", b =>
+                {
+                    b.HasOne("Activity_Finder.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Activity_Finder.Models.UserInterest", b =>
