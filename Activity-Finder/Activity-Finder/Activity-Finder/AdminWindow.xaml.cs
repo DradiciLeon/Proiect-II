@@ -9,13 +9,13 @@ namespace Activity_Finder
     public partial class AdminWindow : Window
     {
         private int _ticketToSolveId = 0;
-
         public AdminWindow()
         {
             InitializeComponent();
             LoadData();
         }
 
+        // Metodă care încarcă datele în ambele tabele
         private void LoadData()
         {
             try
@@ -118,13 +118,17 @@ namespace Activity_Finder
             _ticketToSolveId = 0;
         }
 
+        // Eveniment pentru butonul BAN USER
         private void BanUser_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
             dynamic selectedUser = btn.DataContext;
             int userId = selectedUser.Id;
+            string username = selectedUser.Username;
 
-            var confirm = MessageBox.Show($"Sigur dorești să ștergi definitiv utilizatorul {selectedUser.Username}?", "Confirmare", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            var confirm = MessageBox.Show($"Sigur dorești să ștergi definitiv utilizatorul {username}? Toate postările lui vor fi eliminate.",
+                                        "Confirmare BAN", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
             if (confirm == MessageBoxResult.Yes)
             {
                 using (var context = new AppDbContext())
@@ -134,19 +138,22 @@ namespace Activity_Finder
                     {
                         context.Users.Remove(userDb);
                         context.SaveChanges();
-                        LoadData();
+                        LoadData(); // Refresh tabele
                     }
                 }
             }
         }
 
+        // Eveniment pentru butonul DELETE POST
         private void DeletePost_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
             dynamic selectedPost = btn.DataContext;
             int postId = selectedPost.Id;
 
-            var confirm = MessageBox.Show("Sigur dorești să elimini această postare?", "Confirmare", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var confirm = MessageBox.Show("Sigur dorești să elimini această postare?",
+                                        "Confirmare Ștergere", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
             if (confirm == MessageBoxResult.Yes)
             {
                 using (var context = new AppDbContext())
@@ -156,12 +163,13 @@ namespace Activity_Finder
                     {
                         context.Hobbies.Remove(postDb);
                         context.SaveChanges();
-                        LoadData();
+                        LoadData(); // Refresh tabele
                     }
                 }
             }
         }
 
+        // Funcționalitate Search (Filtrare în timp real)
         private void TxtSearchAdmin_TextChanged(object sender, TextChangedEventArgs e)
         {
             string filter = TxtSearchAdmin.Text.ToLower();
@@ -173,17 +181,19 @@ namespace Activity_Finder
 
             using (var context = new AppDbContext())
             {
+                // 1. Filtrăm userii (Aici e totul ok)
                 UsersGrid.ItemsSource = context.Users
                     .Where(u => u.Username.ToLower().Contains(filter) || u.Email.ToLower().Contains(filter))
                     .Select(u => new { u.Id, u.Username, u.Email, Score = u.Hobbies.Count * 10 })
                     .ToList();
 
+                // 2. Filtrăm postările și le EXTRAGEM din baza de date folosind .ToList() PRIMA DATĂ
                 var filteredPostsDb = context.Hobbies
                     .Include(h => h.User)
-                    .Include(h => h.Users)
                     .Where(h => h.Name.ToLower().Contains(filter) || h.Category.ToLower().Contains(filter) || (h.User != null && h.User.Username.ToLower().Contains(filter)))
-                    .ToList();
+                    .ToList(); // Executăm SQL-ul și aducem datele în memoria RAM
 
+                // 3. Acum că datele sunt în C#, putem folosi HasValue și ToString cu format
                 PostsGrid.ItemsSource = filteredPostsDb
                     .Select(h => new {
                         h.Id,
@@ -191,13 +201,11 @@ namespace Activity_Finder
                         Category = h.Category,
                         Author = h.User != null ? h.User.Username : "Anonim",
                         Description = h.Description,
-                        Location = h.City,
-                        Time = h.Date.HasValue ? h.Date.Value.ToString("HH:mm") : "Nesetată",
-                        Date = h.Date.HasValue ? h.Date.Value.ToString("dd MMM yyyy") : "Nesetată",
-                        Participants = h.Users != null && h.Users.Any()
-                            ? string.Join(", ", h.Users.Select(u => u.Username))
-                            : "❌ Niciun participant înscris încă"
-                    }).ToList();
+                        // Linia magică ce repară eroarea:
+                        Date = h.Date.HasValue ? h.Date.Value.ToString("g") : "Nesetată",
+                        PeopleCount = h.MaxPeople
+                    })
+                    .ToList();
             }
         }
 

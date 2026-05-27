@@ -81,7 +81,9 @@
                                             Height="62"
                                             CornerRadius="31"
                                             ClipToBounds="True"
-                                            VerticalAlignment="Top">
+                                            VerticalAlignment="Top"
+                                            Cursor="Hand"
+                                            MouseLeftButtonDown="OpenProfile_Click">
                                         <Image Source="{Binding ProfileImage, Converter={StaticResource ImageConverter}}"
                                                Stretch="UniformToFill"/>
                                     </Border>
@@ -92,12 +94,16 @@
                                         <TextBlock Text="{Binding Username}"
                                                    FontSize="18"
                                                    FontWeight="Bold"
-                                                   Foreground="#222"/>
+                                                   Foreground="#222"
+                                                   Cursor="Hand"
+                                                   MouseLeftButtonDown="OpenProfile_Click"/>
 
                                         <TextBlock Text="{Binding FullName}"
                                                    FontSize="13"
                                                    Foreground="#777"
-                                                   Margin="0,2,0,0"/>
+                                                   Margin="0,2,0,0"
+                                                   Cursor="Hand"
+                                                   MouseLeftButtonDown="OpenProfile_Click"/>
 
                                         <TextBlock Text="{Binding HobbyName}"
                                                    FontSize="13"

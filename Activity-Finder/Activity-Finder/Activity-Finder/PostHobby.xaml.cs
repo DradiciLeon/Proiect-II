@@ -262,22 +262,6 @@ namespace Activity_Finder
             }
         }
 
-        private void CategorySelector_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
-        {
-            if (!e.Handled)
-            {
-                e.Handled = true;
-                var eventArg = new System.Windows.Input.MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
-                {
-                    RoutedEvent = System.Windows.UIElement.MouseWheelEvent,
-                    Source = sender
-                };
-                var parent = ((System.Windows.FrameworkElement)sender).Parent as System.Windows.UIElement;
-                parent?.RaiseEvent(eventArg);
-            }
-        }
-
-
         private void Back_Click(object sender, RoutedEventArgs e) => ReturnToDashboard();
 
         private void ReturnToDashboard()

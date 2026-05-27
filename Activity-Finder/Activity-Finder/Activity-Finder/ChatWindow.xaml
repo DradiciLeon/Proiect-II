@@ -114,8 +114,8 @@
                                              Margin="0,0,8,0"
                                              Visibility="{Binding ShowAvatar}"
                                              MouseLeftButtonDown="Avatar_Click"
-Tag="{Binding UserId}"
-Cursor="Hand">
+                                             Tag="{Binding UserId}"
+                                             Cursor="Hand">
                                         <Ellipse.Fill>
                                             <ImageBrush ImageSource="{Binding ProfileImagePath}"
                                                         Stretch="UniformToFill"/>
@@ -123,53 +123,47 @@ Cursor="Hand">
                                     </Ellipse>
 
                                     <Grid Grid.Column="1">
-
                                         <StackPanel HorizontalAlignment="{Binding Alignment}">
 
                                             <Border Background="{Binding BubbleColor}"
-                CornerRadius="{Binding BubbleCornerRadius}"
-                Padding="13,10"
-                MaxWidth="230"
-                MouseLeftButtonDown="MessageBubble_Click">
+                                                    CornerRadius="{Binding BubbleCornerRadius}"
+                                                    Padding="13,10"
+                                                    MaxWidth="230"
+                                                    MouseLeftButtonDown="MessageBubble_Click">
 
                                                 <Border.Effect>
                                                     <DropShadowEffect BlurRadius="10"
-                                  Opacity="0.08"
-                                  ShadowDepth="2"/>
+                                                                      Opacity="0.08"
+                                                                      ShadowDepth="2"/>
                                                 </Border.Effect>
 
                                                 <StackPanel>
-
                                                     <TextBlock Text="{Binding Sender}"
-                           FontSize="11"
-                           FontWeight="Bold"
-                           Foreground="{Binding SenderColor}"/>
+                                                               FontSize="11"
+                                                               FontWeight="Bold"
+                                                               Foreground="{Binding SenderColor}"/>
 
                                                     <TextBlock Text="{Binding Text}"
-                           TextWrapping="Wrap"
-                           FontSize="15"
-                           Foreground="#2D3436"
-                           Margin="0,5,0,0"/>
+                                                               TextWrapping="Wrap"
+                                                               FontSize="15"
+                                                               Foreground="#2D3436"
+                                                               Margin="0,5,0,0"/>
 
                                                     <TextBlock Text="{Binding Time}"
-                           FontSize="11"
-                           Foreground="#999"
-                           HorizontalAlignment="Right"
-                           Margin="0,6,0,0"/>
-
+                                                               FontSize="11"
+                                                               Foreground="#999"
+                                                               HorizontalAlignment="Right"
+                                                               Margin="0,6,0,0"/>
                                                 </StackPanel>
-
                                             </Border>
 
                                             <TextBlock Text="{Binding SeenByText}"
-                   FontSize="11"
-                   FontWeight="SemiBold"
-                   Foreground="#999"
-                   Margin="12,3,0,0"
-                   Visibility="{Binding SeenVisibility}"/>
-
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#999"
+                                                       Margin="12,3,0,0"
+                                                       Visibility="{Binding SeenVisibility}"/>
                                         </StackPanel>
-
                                     </Grid>
                                 </Grid>
                             </DataTemplate>
@@ -185,7 +179,8 @@ Cursor="Hand">
                         <ColumnDefinition Width="54"/>
                     </Grid.ColumnDefinitions>
 
-                    <Button Width="44"
+                    <Button x:Name="EmojiButton"
+                            Width="44"
                             Height="44"
                             Background="#FFD93D"
                             Foreground="White"
@@ -220,7 +215,8 @@ Cursor="Hand">
                                  KeyDown="MessageTextBox_KeyDown"/>
                     </Border>
 
-                    <Button Grid.Column="2"
+                    <Button x:Name="SendButton"
+                            Grid.Column="2"
                             Width="44"
                             Height="44"
                             Background="#FF6B6B"
